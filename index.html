@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Undercover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* Police et scrollbar */
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #4c4c8a; border-radius: 2px; }
+
+    /* Animation d'apparition des écrans */
+    .screen { display: none; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Bouton "maintenir" */
+    #btn-hold { user-select: none; -webkit-user-select: none; }
+
+    /* Carte joueur éliminé */
+    .player-card.eliminated { opacity: 0.45; filter: grayscale(70%); }
+
+    /* Gradient titre */
+    .title-gradient {
+      background: linear-gradient(135deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Pulsation douce sur le bouton maintenir */
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(167, 139, 250, 0); }
+    }
+    #btn-hold { animation: pulse-border 2s infinite; }
+    #btn-hold:active { animation: none; }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center">
+
+  <!-- Conteneur centré mobile-first -->
+  <div id="app" class="w-full max-w-lg min-h-screen flex flex-col">
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 1 : ACCUEIL                               -->
+    <!-- ================================================ -->
+    <div id="screen-home" class="screen active flex-col items-center justify-center min-h-screen px-6 py-12 text-center">
+      <div class="mb-10">
+        <div class="text-7xl mb-6">🕵️</div>
+        <h1 class="text-5xl font-black title-gradient mb-3">UNDERCOVER</h1>
+        <p class="text-gray-400 text-lg">Le jeu du bluff et de la déduction</p>
+      </div>
+
+      <div class="w-full space-y-3 mb-10">
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">🏙️</span>
+          <div>
+            <p class="font-semibold text-white">Civils</p>
+            <p class="text-gray-400 text-sm">Partagent le même mot. Démasquez les imposteurs.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">🥸</span>
+          <div>
+            <p class="font-semibold text-purple-400">Undercover</p>
+            <p class="text-gray-400 text-sm">A un mot proche mais différent. Reste discret.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">❓</span>
+          <div>
+            <p class="font-semibold text-pink-400">Mr. White</p>
+            <p class="text-gray-400 text-sm">N'a aucun mot. Improvise et survit.</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-new-game" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 rounded-2xl font-bold text-xl transition-all duration-200 shadow-lg shadow-violet-900/40 active:scale-95">
+        <i class="fa-solid fa-play mr-2"></i> Nouvelle Partie
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 2 : CONFIGURATION                          -->
+    <!-- ================================================ -->
+    <div id="screen-setup" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+      <div class="flex items-center gap-3">
+        <button id="btn-setup-back" class="text-gray-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+        <h2 class="text-2xl font-bold">Configuration</h2>
+      </div>
+
+      <!-- Sélection du thème -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+          <i class="fa-solid fa-palette mr-1"></i> Thème
+        </label>
+        <select id="theme-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 appearance-none cursor-pointer">
+          <option value="generique">🌍 Générique</option>
+          <option value="hardcore">🔥 Hardcore</option>
+          <option value="manga">⚔️ Manga</option>
+          <option value="pays">🗺️ Pays</option>
+        </select>
+      </div>
+
+      <!-- Ajout de joueurs -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+          <i class="fa-solid fa-users mr-1"></i> Joueurs <span id="player-count-label" class="text-violet-400">(0/4 min)</span>
+        </label>
+        <div class="flex gap-2">
+          <input
+            id="player-name-input"
+            type="text"
+            maxlength="20"
+            placeholder="Nom du joueur…"
+            class="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          />
+          <button id="btn-add-player" class="px-5 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-bold transition-all active:scale-95">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <!-- Message d'erreur -->
+        <p id="add-player-error" class="text-red-400 text-sm mt-1 hidden"></p>
+      </div>
+
+      <!-- Liste des joueurs -->
+      <ul id="player-list" class="space-y-2 flex-1 overflow-y-auto">
+        <!-- Joueurs ajoutés dynamiquement -->
+      </ul>
+
+      <!-- Bouton Démarrer -->
+      <button id="btn-start" disabled class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-xl transition-all duration-200 shadow-lg shadow-violet-900/40 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95">
+        <i class="fa-solid fa-rocket mr-2"></i> Démarrer la partie
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 3 : DISTRIBUTION DES MOTS                 -->
+    <!-- ================================================ -->
+    <div id="screen-distribution" class="screen flex-col items-center justify-center min-h-screen px-6 py-8 text-center gap-8">
+
+      <div>
+        <p class="text-gray-400 text-sm uppercase tracking-widest mb-1">Distribution des rôles</p>
+        <p id="dist-progress" class="text-gray-500 text-sm"></p>
+      </div>
+
+      <!-- Avatar et nom du joueur actuel -->
+      <div class="flex flex-col items-center gap-3">
+        <div id="dist-avatar" class="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-3xl font-black shadow-lg shadow-violet-900/50"></div>
+        <h2 id="dist-player-name" class="text-2xl font-bold"></h2>
+        <p class="text-gray-400 text-sm">Prenez le téléphone, vérifiez que personne ne regarde.</p>
+      </div>
+
+      <!-- Zone du mot secret (masquée par défaut) -->
+      <div id="word-reveal-box" class="w-full bg-gray-900 rounded-2xl p-6 border border-gray-700 relative">
+        <!-- Contenu visible uniquement en maintenant le bouton -->
+        <div id="word-content" class="hidden text-center">
+          <p id="dist-role-label" class="text-xs font-semibold uppercase tracking-widest mb-2"></p>
+          <p id="dist-word" class="text-4xl font-black mb-2"></p>
+          <p id="dist-word-hint" class="text-gray-400 text-sm"></p>
+        </div>
+        <!-- Overlay de masquage -->
+        <div id="word-mask" class="text-center text-gray-500">
+          <i class="fa-solid fa-eye-slash text-3xl mb-2 block"></i>
+          <p class="text-sm">Maintenez le bouton ci-dessous pour révéler</p>
+        </div>
+      </div>
+
+      <!-- Bouton maintenir -->
+      <button
+        id="btn-hold"
+        class="w-full py-5 bg-gray-800 border-2 border-violet-500 hover:border-violet-400 rounded-2xl font-bold text-lg transition-all select-none"
+      >
+        <i class="fa-solid fa-hand mr-2"></i> Maintenir pour voir mon mot
+      </button>
+
+      <!-- Bouton Joueur Suivant (caché jusqu'à ce que le mot soit vu) -->
+      <button id="btn-next-player" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95 opacity-0 pointer-events-none">
+        Joueur Suivant <i class="fa-solid fa-arrow-right ml-2"></i>
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 4 : PLATEAU DE JEU                        -->
+    <!-- ================================================ -->
+    <div id="screen-board" class="screen flex-col min-h-screen px-4 py-6 gap-4">
+      <div class="px-2 flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Plateau de jeu</h2>
+          <p id="board-status" class="text-gray-400 text-sm"></p>
+        </div>
+        <div id="board-theme-badge" class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400"></div>
+      </div>
+
+      <!-- Compteurs -->
+      <div id="board-counters" class="flex gap-2 px-2">
+        <!-- Générés dynamiquement -->
+      </div>
+
+      <!-- Grille des joueurs -->
+      <div id="player-grid" class="grid grid-cols-2 gap-3 px-2">
+        <!-- Cartes joueurs générées dynamiquement -->
+      </div>
+
+      <!-- Bouton vérifier la victoire -->
+      <div class="px-2 mt-auto pt-4">
+        <button id="btn-check-win" class="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl font-semibold text-sm transition-all active:scale-95">
+          <i class="fa-solid fa-flag-checkered mr-2"></i> Vérifier la victoire
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 5 : FIN DE PARTIE                         -->
+    <!-- ================================================ -->
+    <div id="screen-end" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+      <!-- Bannière victoire -->
+      <div id="end-banner" class="rounded-2xl p-6 text-center">
+        <div id="end-icon" class="text-6xl mb-3"></div>
+        <h2 id="end-title" class="text-3xl font-black mb-1"></h2>
+        <p id="end-subtitle" class="text-lg opacity-80"></p>
+      </div>
+
+      <!-- Révélation des mots -->
+      <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+        <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+          <i class="fa-solid fa-key mr-1"></i> Les mots secrets
+        </h3>
+        <div id="end-words" class="space-y-1">
+          <!-- Générés dynamiquement -->
+        </div>
+      </div>
+
+      <!-- Liste de tous les joueurs et leurs rôles -->
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+          <i class="fa-solid fa-users mr-1"></i> Récapitulatif
+        </h3>
+        <div id="end-player-list" class="space-y-2">
+          <!-- Générés dynamiquement -->
+        </div>
+      </div>
+
+      <!-- Boutons -->
+      <div class="space-y-3 mt-auto">
+        <button id="btn-replay" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95">
+          <i class="fa-solid fa-rotate-right mr-2"></i> Rejouer (mêmes joueurs)
+        </button>
+        <button id="btn-home" class="w-full py-3 bg-gray-800 hover:bg-gray-700 rounded-2xl font-semibold transition-all active:scale-95">
+          <i class="fa-solid fa-house mr-2"></i> Retour à l'accueil
+        </button>
+      </div>
+    </div>
+
+  </div><!-- fin #app -->
+
+  <script>
+    /* ============================================================
+       DICTIONNAIRE DE MOTS
+    ============================================================ */
+    const wordDictionary = {
+      generique: [
+        { civil: "Soleil", undercover: "Lune" }, { civil: "Miroir", undercover: "Vitre" },
+        { civil: "Chien", undercover: "Loup" }, { civil: "Stylo", undercover: "Crayon" },
+        { civil: "Voiture", undercover: "Camion" }, { civil: "Mer", undercover: "Océan" },
+        { civil: "Pomme", undercover: "Poire" }, { civil: "Glace", undercover: "Sorbet" },
+        { civil: "Chaussure", undercover: "Chaussette" }, { civil: "Canapé", undercover: "Fauteuil" }
+      ],
+      hardcore: [
+        { civil: "Mythe", undercover: "Légende" }, { civil: "Empathie", undercover: "Sympathie" },
+        { civil: "Sourire", undercover: "Rire" }, { civil: "Doute", undercover: "Soupçon" },
+        { civil: "Rêve", undercover: "Illusion" }, { civil: "Hasard", undercover: "Destin" },
+        { civil: "Secte", undercover: "Religion" }, { civil: "Célébrité", undercover: "Influenceur" },
+        { civil: "Orgueil", undercover: "Fierté" }, { civil: "Univers", undercover: "Galaxie" }
+      ],
+      manga: [
+        { civil: "Chakra", undercover: "Ki" }, { civil: "Sharingan", undercover: "Byakugan" },
+        { civil: "Titan", undercover: "Démon" }, { civil: "Ninja", undercover: "Samouraï" },
+        { civil: "Katana", undercover: "Épée" }, { civil: "Pirate", undercover: "Marine" },
+        { civil: "Goule", undercover: "Vampire" }, { civil: "Alchimiste", undercover: "Sorcier" },
+        { civil: "Mecha", undercover: "Cyborg" }, { civil: "Hokage", undercover: "Empereur" }
+      ],
+      pays: [
+        { civil: "Suède", undercover: "Norvège" }, { civil: "Japon", undercover: "Chine" },
+        { civil: "Brésil", undercover: "Argentine" }, { civil: "Canada", undercover: "États-Unis" },
+        { civil: "Australie", undercover: "Nouvelle-Zélande" }, { civil: "Italie", undercover: "Espagne" },
+        { civil: "Maroc", undercover: "Algérie" }, { civil: "Égypte", undercover: "Turquie" },
+        { civil: "Irlande", undercover: "Écosse" }, { civil: "Corée du Sud", undercover: "Corée du Nord" }
+      ]
+    };
+
+    /* ============================================================
+       ÉTAT GLOBAL DU JEU
+    ============================================================ */
+    let gameState = {
+      players: [],        // { name, role, word, eliminated }
+      theme: 'generique',
+      wordPair: null,     // { civil, undercover }
+      distIndex: 0,       // Index du joueur en cours de distribution
+      wordSeen: false,    // Le joueur actuel a-t-il vu son mot ?
+    };
+
+    /* ============================================================
+       UTILITAIRES
+    ============================================================ */
+
+    /** Affiche uniquement l'écran demandé */
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    /** Retourne un entier aléatoire entre min et max (inclus) */
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    /** Mélange un tableau (Fisher-Yates) */
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = randInt(0, i);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    /** Retourne la première lettre en majuscule pour l'avatar */
+    function initial(name) {
+      return name.charAt(0).toUpperCase();
+    }
+
+    /** Couleur de rôle */
+    function roleColor(role) {
+      if (role === 'civil') return 'text-blue-400';
+      if (role === 'undercover') return 'text-purple-400';
+      return 'text-pink-400'; // mr_white
+    }
+
+    /** Label lisible d'un rôle */
+    function roleLabel(role) {
+      if (role === 'civil') return '🏙️ Civil';
+      if (role === 'undercover') return '🥸 Undercover';
+      return '❓ Mr. White';
+    }
+
+    /* ============================================================
+       LOGIQUE DE RÉPARTITION DES RÔLES
+    ============================================================ */
+
+    /**
+     * Détermine le nombre d'Undercovers et de Mr. White selon le nombre de joueurs.
+     * Règle : toujours 1 Mr. White, 1 Undercover, reste = Civils.
+     */
+    function getRoleDistribution(n) {
+      return { civil: n - 2, undercover: 1, mrWhite: 1 };
+    }
+
+    /**
+     * Assigne les rôles et les mots aux joueurs.
+     * Modifie gameState.players en place.
+     */
+    function assignRoles() {
+      const n = gameState.players.length;
+      const dist = getRoleDistribution(n);
+      const pair = gameState.wordPair;
+
+      // Construction du tableau de rôles
+      const roles = [
+        ...Array(dist.civil).fill('civil'),
+        ...Array(dist.undercover).fill('undercover'),
+        ...Array(dist.mrWhite).fill('mr_white'),
+      ];
+
+      // Mélange pour attribution aléatoire
+      const shuffled = shuffle(roles);
+
+      gameState.players = gameState.players.map((p, i) => ({
+        ...p,
+        role: shuffled[i],
+        word: shuffled[i] === 'civil' ? pair.civil
+            : shuffled[i] === 'undercover' ? pair.undercover
+            : null,
+        eliminated: false,
+      }));
+    }
+
+    /* ============================================================
+       ÉCRAN CONFIGURATION
+    ============================================================ */
+
+    /** Met à jour la liste visuelle des joueurs et l'état du bouton Démarrer */
+    function renderPlayerList() {
+      const list = document.getElementById('player-list');
+      const btnStart = document.getElementById('btn-start');
+      const label = document.getElementById('player-count-label');
+      const n = gameState.players.length;
+
+      label.textContent = `(${n}/4 min)`;
+
+      list.innerHTML = gameState.players.map((p, i) => `
+        <li class="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+              ${initial(p.name)}
+            </div>
+            <span class="font-medium">${p.name}</span>
+          </div>
+          <button data-index="${i}" class="btn-remove-player text-gray-500 hover:text-red-400 transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </li>
+      `).join('');
+
+      // Activation du bouton Démarrer
+      btnStart.disabled = n < 4;
+
+      // Attache les événements de suppression
+      list.querySelectorAll('.btn-remove-player').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.index);
+          gameState.players.splice(idx, 1);
+          renderPlayerList();
+        });
+      });
+    }
+
+    /** Initialise les listeners de l'écran Configuration */
+    function initSetupScreen() {
+      const input = document.getElementById('player-name-input');
+      const btnAdd = document.getElementById('btn-add-player');
+      const btnStart = document.getElementById('btn-start');
+      const error = document.getElementById('add-player-error');
+
+      /** Ajoute un joueur à la liste */
+      function addPlayer() {
+        const name = input.value.trim();
+        error.classList.add('hidden');
+
+        if (!name) {
+          showError('Entrez un prénom !');
+          return;
+        }
+        if (name.length < 2) {
+          showError('Minimum 2 caractères.');
+          return;
+        }
+        if (gameState.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+          showError('Ce joueur existe déjà !');
+          return;
+        }
+
+        gameState.players.push({ name });
+        input.value = '';
+        input.focus();
+        renderPlayerList();
+      }
+
+      function showError(msg) {
+        error.textContent = msg;
+        error.classList.remove('hidden');
+      }
+
+      btnAdd.addEventListener('click', addPlayer);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+
+      btnStart.addEventListener('click', () => {
+        const theme = document.getElementById('theme-select').value;
+        const dict = wordDictionary[theme];
+        // Tirage aléatoire d'une paire de mots
+        gameState.wordPair = dict[randInt(0, dict.length - 1)];
+        gameState.theme = theme;
+        assignRoles();
+        startDistribution();
+      });
+
+      document.getElementById('btn-setup-back').addEventListener('click', () => {
+        showScreen('screen-home');
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN DISTRIBUTION
+    ============================================================ */
+
+    /** Lance la phase de distribution (premier joueur) */
+    function startDistribution() {
+      gameState.distIndex = 0;
+      gameState.wordSeen = false;
+      showScreen('screen-distribution');
+      renderDistributionTurn();
+    }
+
+    /** Affiche le tour du joueur courant */
+    function renderDistributionTurn() {
+      const player = gameState.players[gameState.distIndex];
+      const total = gameState.players.length;
+      const current = gameState.distIndex + 1;
+
+      document.getElementById('dist-progress').textContent = `Joueur ${current} / ${total}`;
+      document.getElementById('dist-player-name').textContent = player.name;
+      document.getElementById('dist-avatar').textContent = initial(player.name);
+
+      // Réinitialise l'état d'affichage
+      hideWord();
+      gameState.wordSeen = false;
+
+      const btnNext = document.getElementById('btn-next-player');
+      btnNext.classList.add('opacity-0', 'pointer-events-none');
+      btnNext.textContent = current < total
+        ? `Joueur Suivant  →`
+        : `Commencer la partie  →`;
+    }
+
+    /** Révèle le mot du joueur actuel */
+    function revealWord() {
+      const player = gameState.players[gameState.distIndex];
+
+      // Détermine les textes selon le rôle
+      let roleText = '';
+      let wordText = '';
+      let hintText = '';
+
+      if (player.role === 'civil') {
+        roleText = '🏙️ Vous êtes Civil';
+        wordText = player.word;
+        hintText = 'Décrivez ce mot sans le dire !';
+        document.getElementById('dist-role-label').className = 'text-xs font-semibold uppercase tracking-widest mb-2 text-blue-400';
+      } else if (player.role === 'undercover') {
+        roleText = '🥸 Vous êtes Undercover';
+        wordText = player.word;
+        hintText = 'Votre mot est proche, mais différent. Faites semblant !';
+        document.getElementById('dist-role-label').className = 'text-xs font-semibold uppercase tracking-widest mb-2 text-purple-400';
+      } else {
+        roleText = '❓ Vous êtes Mr. White';
+        wordText = '???';
+        hintText = 'Vous n\'avez aucun mot. Improvise et survie !';
+        document.getElementById('dist-role-label').className = 'text-xs font-semibold uppercase tracking-widest mb-2 text-pink-400';
+      }
+
+      document.getElementById('dist-role-label').textContent = roleText;
+      document.getElementById('dist-word').textContent = wordText;
+      document.getElementById('dist-word-hint').textContent = hintText;
+
+      // Affiche le contenu, masque l'overlay
+      document.getElementById('word-content').classList.remove('hidden');
+      document.getElementById('word-mask').classList.add('hidden');
+
+      gameState.wordSeen = true;
+    }
+
+    /** Cache le mot (retour à l'état masqué) */
+    function hideWord() {
+      document.getElementById('word-content').classList.add('hidden');
+      document.getElementById('word-mask').classList.remove('hidden');
+    }
+
+    /** Initialise les listeners de l'écran Distribution */
+    function initDistributionScreen() {
+      const btnHold = document.getElementById('btn-hold');
+      const btnNext = document.getElementById('btn-next-player');
+
+      // Maintenir = voir le mot
+      btnHold.addEventListener('mousedown', revealWord);
+      btnHold.addEventListener('touchstart', e => { e.preventDefault(); revealWord(); }, { passive: false });
+
+      // Relâcher = cacher le mot
+      btnHold.addEventListener('mouseup', hideWord);
+      btnHold.addEventListener('mouseleave', hideWord);
+      btnHold.addEventListener('touchend', () => {
+        hideWord();
+        // Sur mobile : active le bouton "suivant" une fois le mot vu
+        if (gameState.wordSeen) {
+          btnNext.classList.remove('opacity-0', 'pointer-events-none');
+        }
+      });
+
+      // Sur desktop : active le bouton après avoir vu (mouseup)
+      btnHold.addEventListener('mouseup', () => {
+        if (gameState.wordSeen) {
+          btnNext.classList.remove('opacity-0', 'pointer-events-none');
+        }
+      });
+
+      btnNext.addEventListener('click', () => {
+        gameState.distIndex++;
+        if (gameState.distIndex >= gameState.players.length) {
+          // Tous les joueurs ont vu leur mot → plateau de jeu
+          renderBoard();
+          showScreen('screen-board');
+        } else {
+          renderDistributionTurn();
+        }
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN PLATEAU DE JEU
+    ============================================================ */
+
+    /** Labels des thèmes */
+    const themeLabels = {
+      generique: '🌍 Générique', hardcore: '🔥 Hardcore',
+      manga: '⚔️ Manga', pays: '🗺️ Pays'
+    };
+
+    /** Génère et affiche le plateau */
+    function renderBoard() {
+      const grid = document.getElementById('player-grid');
+      const status = document.getElementById('board-status');
+      const counters = document.getElementById('board-counters');
+      document.getElementById('board-theme-badge').textContent = themeLabels[gameState.theme];
+
+      const alive = gameState.players.filter(p => !p.eliminated);
+      status.textContent = `${alive.length} joueur${alive.length > 1 ? 's' : ''} en jeu`;
+
+      // Compteurs par rôle (vivants uniquement)
+      const civilsAlive = alive.filter(p => p.role === 'civil').length;
+      const undercoverAlive = alive.filter(p => p.role === 'undercover').length;
+      const mrWhiteAlive = alive.filter(p => p.role === 'mr_white').length;
+
+      counters.innerHTML = `
+        <div class="flex-1 bg-blue-900/30 border border-blue-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-blue-400">${civilsAlive}</p>
+          <p class="text-xs text-blue-300">Civils</p>
+        </div>
+        <div class="flex-1 bg-purple-900/30 border border-purple-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-purple-400">${undercoverAlive}</p>
+          <p class="text-xs text-purple-300">Undercover</p>
+        </div>
+        <div class="flex-1 bg-pink-900/30 border border-pink-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-pink-400">${mrWhiteAlive}</p>
+          <p class="text-xs text-pink-300">Mr. White</p>
+        </div>
+      `;
+
+      // Cartes joueurs
+      grid.innerHTML = gameState.players.map((p, i) => {
+        const isEliminated = p.eliminated;
+        return `
+          <div class="player-card bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col items-center gap-3 transition-all ${isEliminated ? 'eliminated' : ''}" data-index="${i}">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-2xl font-black shadow-md">
+              ${initial(p.name)}
+            </div>
+            <p class="font-semibold text-sm text-center truncate w-full text-center">${p.name}</p>
+            ${isEliminated ? `
+              <div class="text-center">
+                <p class="text-xs ${roleColor(p.role)} font-semibold">${roleLabel(p.role)}</p>
+                ${p.word ? `<p class="text-xs text-gray-400">"${p.word}"</p>` : ''}
+              </div>
+              <div class="w-full py-1 bg-red-900/30 border border-red-800 rounded-lg text-center text-xs text-red-400 font-semibold">
+                Éliminé
+              </div>
+            ` : `
+              <button data-index="${i}" class="btn-eliminate w-full py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all active:scale-95">
+                <i class="fa-solid fa-skull mr-1"></i> Éliminer
+              </button>
+            `}
+          </div>
+        `;
+      }).join('');
+
+      // Listeners des boutons Éliminer
+      grid.querySelectorAll('.btn-eliminate').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.index);
+          eliminatePlayer(idx);
+        });
+      });
+    }
+
+    /** Élimine un joueur et vérifie les conditions de victoire */
+    function eliminatePlayer(index) {
+      gameState.players[index].eliminated = true;
+      renderBoard();
+
+      // Vérifie automatiquement la victoire
+      const result = checkWinCondition();
+      if (result) {
+        setTimeout(() => showEndScreen(result), 600);
+      }
+    }
+
+    /** Vérifie les conditions de victoire.
+     *  Retourne un objet { winner, message } ou null si la partie continue. */
+    function checkWinCondition() {
+      const alive = gameState.players.filter(p => !p.eliminated);
+      const civils = alive.filter(p => p.role === 'civil');
+      const undercovers = alive.filter(p => p.role === 'undercover');
+      const mrWhites = alive.filter(p => p.role === 'mr_white');
+
+      // Civils gagnent : tous les Undercovers et Mr. White éliminés
+      if (undercovers.length === 0 && mrWhites.length === 0) {
+        return { winner: 'civil', title: 'Les Civils ont gagné !', subtitle: 'Tous les imposteurs ont été démasqués.' };
+      }
+
+      // Undercovers gagnent : il ne reste qu'un Civil (ou moins)
+      if (civils.length <= 1) {
+        return { winner: 'undercover', title: 'Les Undercovers ont gagné !', subtitle: 'Les civils sont en minorité.' };
+      }
+
+      // Mr. White gagne en survivant jusqu'au face-à-face final
+      if (alive.length === 2 && mrWhites.length === 1) {
+        return { winner: 'mr_white', title: 'Mr. White a gagné !', subtitle: 'L\'inconnu a survécu jusqu\'au bout !' };
+      }
+
+      return null;
+    }
+
+    /** Initialise les listeners du plateau */
+    function initBoardScreen() {
+      document.getElementById('btn-check-win').addEventListener('click', () => {
+        const result = checkWinCondition();
+        if (result) {
+          showEndScreen(result);
+        } else {
+          // Petit feedback visuel
+          const btn = document.getElementById('btn-check-win');
+          btn.textContent = '✓ La partie continue…';
+          setTimeout(() => {
+            btn.innerHTML = '<i class="fa-solid fa-flag-checkered mr-2"></i> Vérifier la victoire';
+          }, 1500);
+        }
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN FIN DE PARTIE
+    ============================================================ */
+
+    /** Affiche l'écran de fin avec le résultat */
+    function showEndScreen(result) {
+      const banner = document.getElementById('end-banner');
+      const icon = document.getElementById('end-icon');
+      const title = document.getElementById('end-title');
+      const subtitle = document.getElementById('end-subtitle');
+
+      // Couleurs et icônes selon le gagnant
+      if (result.winner === 'civil') {
+        banner.className = 'rounded-2xl p-6 text-center bg-blue-900/40 border border-blue-700';
+        icon.textContent = '🏙️';
+      } else if (result.winner === 'undercover') {
+        banner.className = 'rounded-2xl p-6 text-center bg-purple-900/40 border border-purple-700';
+        icon.textContent = '🥸';
+      } else {
+        banner.className = 'rounded-2xl p-6 text-center bg-pink-900/40 border border-pink-700';
+        icon.textContent = '❓';
+      }
+
+      title.textContent = result.title;
+      subtitle.textContent = result.subtitle;
+
+      // Affiche les mots secrets
+      const endWords = document.getElementById('end-words');
+      endWords.innerHTML = `
+        <div class="flex justify-between items-center py-2 border-b border-gray-800">
+          <span class="text-blue-400 font-semibold">🏙️ Mot Civil</span>
+          <span class="text-white font-bold">${gameState.wordPair.civil}</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-gray-800">
+          <span class="text-purple-400 font-semibold">🥸 Mot Undercover</span>
+          <span class="text-white font-bold">${gameState.wordPair.undercover}</span>
+        </div>
+        <div class="flex justify-between items-center py-2">
+          <span class="text-pink-400 font-semibold">❓ Mot Mr. White</span>
+          <span class="text-gray-400 italic">Aucun</span>
+        </div>
+      `;
+
+      // Récapitulatif des joueurs
+      const endList = document.getElementById('end-player-list');
+      endList.innerHTML = gameState.players.map(p => `
+        <div class="flex items-center justify-between bg-gray-900 rounded-xl px-4 py-3 ${p.eliminated ? 'opacity-50' : ''}">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+              ${initial(p.name)}
+            </div>
+            <div>
+              <p class="font-semibold text-sm">${p.name}</p>
+              <p class="text-xs ${roleColor(p.role)}">${roleLabel(p.role)}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold">${p.word || '???'}</p>
+            ${p.eliminated ? '<p class="text-xs text-red-400">Éliminé</p>' : '<p class="text-xs text-green-400">Survivant</p>'}
+          </div>
+        </div>
+      `).join('');
+
+      showScreen('screen-end');
+    }
+
+    /** Initialise les listeners de l'écran Fin */
+    function initEndScreen() {
+      // Rejouer avec les mêmes joueurs : remet les rôles à zéro et relance
+      document.getElementById('btn-replay').addEventListener('click', () => {
+        const theme = gameState.theme;
+        const dict = wordDictionary[theme];
+        gameState.wordPair = dict[randInt(0, dict.length - 1)];
+        // Réinitialise les joueurs (conserve les noms)
+        gameState.players = gameState.players.map(p => ({ name: p.name }));
+        assignRoles();
+        startDistribution();
+      });
+
+      document.getElementById('btn-home').addEventListener('click', () => {
+        // Réinitialisation complète
+        gameState.players = [];
+        gameState.wordPair = null;
+        showScreen('screen-home');
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN ACCUEIL
+    ============================================================ */
+    function initHomeScreen() {
+      document.getElementById('btn-new-game').addEventListener('click', () => {
+        // Réinitialise les joueurs si on revient de l'accueil
+        gameState.players = [];
+        gameState.wordPair = null;
+        document.getElementById('theme-select').value = 'generique';
+        renderPlayerList();
+        showScreen('screen-setup');
+      });
+    }
+
+    /* ============================================================
+       INITIALISATION GLOBALE
+    ============================================================ */
+    function init() {
+      initHomeScreen();
+      initSetupScreen();
+      initDistributionScreen();
+      initBoardScreen();
+      initEndScreen();
+      // Affiche l'accueil au démarrage
+      showScreen('screen-home');
+    }
+
+    // Lance l'app quand le DOM est prêt
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
