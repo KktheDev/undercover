@@ -931,7 +931,7 @@
             </div>
           </div>
           <div class="text-right">
-            <p class="text-sm font-bold">${p.word || '???'}</p>
+            <p class="text-sm font-bold ${roleColor(p.role)}">${roleLabel(p.role)}</p>
             ${p.eliminated ? '<p class="text-xs text-red-400">Éliminé</p>' : '<p class="text-xs text-green-400">Survivant</p>'}
           </div>
         </div>
