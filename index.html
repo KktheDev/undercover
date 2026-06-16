@@ -483,6 +483,14 @@
             : null,
         eliminated: false,
       }));
+
+      // Premier joueur choisi au hasard — le Mr. White ne peut jamais commencer
+      const eligibles = gameState.players
+        .map((_, i) => i)
+        .filter(i => gameState.players[i].role !== 'mr_white');
+      const firstIdx = eligibles[randInt(0, eligibles.length - 1)];
+      const [firstPlayer] = gameState.players.splice(firstIdx, 1);
+      gameState.players.unshift(firstPlayer);
     }
 
     /* ============================================================
