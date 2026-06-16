@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Undercover — En Ligne</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #4c4c8a; border-radius: 2px; }
+
+    .screen { display: none; animation: fadeIn .3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .title-gradient {
+      background: linear-gradient(135deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    /* Code de salle affiché en grand */
+    .room-code-display {
+      font-size: 3.5rem; font-weight: 900; letter-spacing: .35em;
+      background: linear-gradient(135deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    /* Indicateur de présence en ligne */
+    .online-dot {
+      width: 8px; height: 8px; background: #4ade80;
+      border-radius: 50%; animation: blink 1.6s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: .3; }
+    }
+    /* Spinner de chargement */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin .8s linear infinite; display: inline-block; }
+
+    /* Carte joueur éliminé */
+    .player-card.eliminated { opacity: .45; filter: grayscale(70%); }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center">
+
+<div id="app" class="w-full max-w-lg min-h-screen flex flex-col">
+
+  <!-- ============================================================
+       ÉCRAN 1 : ACCUEIL — nom + créer / rejoindre
+  ============================================================ -->
+  <div id="screen-home" class="screen active flex-col items-center justify-center min-h-screen px-6 py-10 gap-6 text-center">
+
+    <div>
+      <div class="text-6xl mb-4">🕵️</div>
+      <h1 class="text-5xl font-black title-gradient mb-2">UNDERCOVER</h1>
+      <p class="text-gray-400">Multijoueur temps réel</p>
+    </div>
+
+    <!-- Saisie du prénom -->
+    <div class="w-full">
+      <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider text-left">
+        Ton prénom
+      </label>
+      <input id="input-name" type="text" maxlength="20" placeholder="Entre ton prénom…"
+        class="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+      <p id="name-error" class="text-red-400 text-sm mt-1 text-left hidden"></p>
+    </div>
+
+    <!-- Boutons principaux -->
+    <div id="home-buttons" class="w-full space-y-3">
+      <button id="btn-create"
+        class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 rounded-2xl font-bold text-xl transition-all active:scale-95 shadow-lg shadow-violet-900/40">
+        <i class="fa-solid fa-plus mr-2"></i> Créer une partie
+      </button>
+      <button id="btn-show-join"
+        class="w-full py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-2xl font-bold text-xl transition-all active:scale-95">
+        <i class="fa-solid fa-right-to-bracket mr-2"></i> Rejoindre
+      </button>
+    </div>
+
+    <!-- Formulaire code de salle (masqué par défaut) -->
+    <div id="join-form" class="w-full space-y-3 hidden">
+      <input id="input-room-code" type="text" maxlength="4" placeholder="CODE"
+        class="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-violet-500 text-center text-3xl font-black tracking-widest uppercase" />
+      <p id="join-error" class="text-red-400 text-sm hidden"></p>
+      <button id="btn-join"
+        class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-xl transition-all active:scale-95">
+        Rejoindre <i class="fa-solid fa-arrow-right ml-2"></i>
+      </button>
+      <button id="btn-cancel-join" class="w-full py-2 text-gray-500 hover:text-white transition-colors text-sm">
+        Annuler
+      </button>
+    </div>
+
+    <!-- État chargement -->
+    <div id="home-loading" class="hidden flex-col items-center gap-3">
+      <span class="spinner text-4xl text-violet-400">⟳</span>
+      <p id="loading-text" class="text-gray-400">Connexion…</p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN 2 : LOBBY — salle d'attente
+  ============================================================ -->
+  <div id="screen-lobby" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+
+    <!-- Code de la salle -->
+    <div class="text-center">
+      <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Code de la salle</p>
+      <div id="lobby-code" class="room-code-display"></div>
+      <p class="text-gray-500 text-sm mt-1">Partage ce code avec tes amis</p>
+    </div>
+
+    <!-- Liste des joueurs connectés -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+          <i class="fa-solid fa-users mr-1"></i> Joueurs
+        </span>
+        <span id="lobby-player-count" class="text-xs text-gray-500"></span>
+      </div>
+      <ul id="lobby-player-list" class="space-y-2"></ul>
+    </div>
+
+    <!-- Sélecteur de thème (hôte uniquement) -->
+    <div id="lobby-theme-wrap">
+      <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+        <i class="fa-solid fa-palette mr-1"></i> Thème
+      </label>
+      <select id="lobby-theme"
+        class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 appearance-none cursor-pointer">
+        <option value="generique">🌍 Générique</option>
+        <option value="hardcore">🔥 Hardcore</option>
+        <option value="manga">⚔️ Manga</option>
+        <option value="pays">🗺️ Pays</option>
+      </select>
+    </div>
+
+    <!-- Répartition des rôles (hôte uniquement) -->
+    <div id="lobby-role-config" class="hidden">
+      <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+        <i class="fa-solid fa-masks-theater mr-1"></i> Répartition des rôles
+      </label>
+      <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>🏙️</span>
+            <div>
+              <p class="font-semibold text-sm">Civils</p>
+              <p class="text-xs text-gray-500">Connaissent le vrai mot</p>
+            </div>
+          </div>
+          <span id="lobby-civil-count" class="text-2xl font-black text-blue-400">—</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>🥸</span>
+            <div>
+              <p class="font-semibold text-sm text-purple-400">Undercover</p>
+              <p class="text-xs text-gray-500">Mot similaire mais différent</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="btn-uc-minus" class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 font-bold text-xl transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+            <span id="lobby-uc-count" class="text-2xl font-black text-purple-400 w-6 text-center">1</span>
+            <button id="btn-uc-plus"  class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 font-bold text-xl transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>❓</span>
+            <div>
+              <p class="font-semibold text-sm text-pink-400">Mr. White</p>
+              <p class="text-xs text-gray-500">Aucun mot, doit improviser</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="btn-mw-minus" class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 font-bold text-xl transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+            <span id="lobby-mw-count" class="text-2xl font-black text-pink-400 w-6 text-center">0</span>
+            <button id="btn-mw-plus"  class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 font-bold text-xl transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions hôte -->
+    <div id="lobby-host-section" class="mt-auto space-y-2 hidden">
+      <p id="lobby-hint" class="text-center text-gray-500 text-sm"></p>
+      <button id="btn-start-game" disabled
+        class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-xl transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+        <i class="fa-solid fa-rocket mr-2"></i> Démarrer la partie
+      </button>
+    </div>
+
+    <!-- Message attente invité -->
+    <div id="lobby-guest-section" class="mt-auto text-center text-gray-500 hidden">
+      <div class="text-3xl mb-2">⏳</div>
+      <p>En attente que l'hôte démarre…</p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN 3 : RÉVÉLATION DU RÔLE (sur son propre téléphone)
+  ============================================================ -->
+  <div id="screen-role" class="screen flex-col items-center justify-center min-h-screen px-6 py-8 text-center gap-8">
+
+    <div>
+      <p class="text-gray-400 text-sm uppercase tracking-widest mb-1">Ton rôle secret</p>
+      <p class="text-gray-500 text-xs">Ne montre pas ton écran aux autres !</p>
+    </div>
+
+    <!-- Avatar + nom -->
+    <div class="flex flex-col items-center gap-3">
+      <div id="role-avatar"
+        class="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-3xl font-black shadow-lg shadow-violet-900/50">
+      </div>
+      <h2 id="role-player-name" class="text-2xl font-bold"></h2>
+    </div>
+
+    <!-- Carte rôle -->
+    <div id="role-card" class="w-full rounded-2xl p-6 border">
+      <p id="role-badge" class="text-xs font-semibold uppercase tracking-widest mb-3"></p>
+      <p id="role-word" class="text-5xl font-black mb-3"></p>
+      <p id="role-hint" class="text-sm opacity-70"></p>
+    </div>
+
+    <!-- Bouton "J'ai vu" -->
+    <button id="btn-role-ready"
+      class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95">
+      <i class="fa-solid fa-check mr-2"></i> J'ai vu mon rôle
+    </button>
+
+    <!-- Zone d'attente (apparaît après avoir cliqué) -->
+    <div id="role-waiting" class="hidden w-full text-center space-y-2">
+      <p class="text-green-400 font-semibold">✓ Prêt !</p>
+      <p id="role-waiting-count" class="text-gray-400 text-sm"></p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN 4 : PLATEAU DE JEU (synchronisé)
+  ============================================================ -->
+  <div id="screen-board" class="screen flex-col min-h-screen px-4 py-6 gap-4">
+    <div class="px-2 flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-bold">Plateau de jeu</h2>
+        <p id="board-status" class="text-gray-400 text-sm"></p>
+      </div>
+      <div id="board-theme-badge" class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400"></div>
+    </div>
+    <div id="board-counters" class="flex gap-2 px-2"></div>
+    <div id="player-grid" class="grid grid-cols-2 gap-3 px-2"></div>
+    <div class="px-2 mt-auto pt-4">
+      <button id="btn-check-win"
+        class="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl font-semibold text-sm transition-all active:scale-95">
+        <i class="fa-solid fa-flag-checkered mr-2"></i> Vérifier la victoire
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ÉCRAN 5 : FIN DE PARTIE
+  ============================================================ -->
+  <div id="screen-end" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+    <div id="end-banner" class="rounded-2xl p-6 text-center">
+      <div id="end-icon" class="text-6xl mb-3"></div>
+      <h2 id="end-title" class="text-3xl font-black mb-1"></h2>
+      <p id="end-subtitle" class="text-lg opacity-80"></p>
+    </div>
+
+    <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+      <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+        <i class="fa-solid fa-key mr-1"></i> Les mots secrets
+      </h3>
+      <div id="end-words" class="space-y-1"></div>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+        <i class="fa-solid fa-users mr-1"></i> Récapitulatif
+      </h3>
+      <div id="end-player-list" class="space-y-2"></div>
+    </div>
+
+    <div class="space-y-3 mt-auto">
+      <!-- Rejouer : hôte uniquement -->
+      <div id="end-host-actions" class="hidden">
+        <button id="btn-replay"
+          class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95">
+          <i class="fa-solid fa-rotate-right mr-2"></i> Rejouer (même salle)
+        </button>
+      </div>
+      <p id="end-guest-hint" class="text-center text-gray-500 text-sm hidden">En attente que l'hôte relance…</p>
+      <button id="btn-leave"
+        class="w-full py-3 bg-gray-800 hover:bg-gray-700 rounded-2xl font-semibold transition-all active:scale-95">
+        <i class="fa-solid fa-house mr-2"></i> Quitter la partie
+      </button>
+    </div>
+  </div>
+
+</div><!-- fin #app -->
+
+<!-- ============================================================
+     FIREBASE + LOGIQUE DE JEU
+============================================================ -->
+<script type="module">
+  /* ----------------------------------------------------------
+     IMPORTS FIREBASE (version modulaire, pas de npm)
+  ---------------------------------------------------------- */
+  import { initializeApp }    from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import {
+    getDatabase, ref, set, get, update, remove, onValue
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+
+  /* ----------------------------------------------------------
+     CONFIG FIREBASE
+     databaseURL : si absent du panneau Firebase, le format
+     par défaut est https://{projectId}-default-rtdb.firebaseio.com
+     (changer la région si tu l'as créée en Europe ou Asie)
+  ---------------------------------------------------------- */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBGz74Q6DDnuyq9djI_LzMF-CzUPDNM5Ac",
+    authDomain:        "undercover-a6759.firebaseapp.com",
+    databaseURL:       "https://undercover-a6759-default-rtdb.firebaseio.com",
+    projectId:         "undercover-a6759",
+    storageBucket:     "undercover-a6759.firebasestorage.app",
+    messagingSenderId: "84229808636",
+    appId:             "1:84229808636:web:9ab92595e8a8636cca9279"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  /* ----------------------------------------------------------
+     TIMEOUT FIREBASE
+     Firebase ne rejette jamais une promesse si la connexion
+     échoue — elle attend indéfiniment. Ce wrapper ajoute une
+     limite de temps avec un message d'erreur explicite.
+  ---------------------------------------------------------- */
+  function withTimeout(promise, ms = 6000, msg = null) {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(
+        msg || `Pas de réponse Firebase après ${ms / 1000}s.\n\n` +
+        `Vérifie :\n` +
+        `1. Realtime Database activée dans la console Firebase\n` +
+        `2. databaseURL correcte dans le code\n` +
+        `3. Règles en mode "Test" (lecture/écriture ouvertes)`
+      )), ms)
+    );
+    return Promise.race([promise, timeout]);
+  }
+
+  /* ----------------------------------------------------------
+     DICTIONNAIRE DE MOTS
+  ---------------------------------------------------------- */
+  const wordDictionary = {
+  // Mode 1 : Générique (Des concepts simples et visuels)
+  generique: [
+    { civil: "Soleil", undercover: "Lune" }, { civil: "Miroir", undercover: "Vitre" },
+    { civil: "Chien", undercover: "Loup" }, { civil: "Stylo", undercover: "Crayon" },
+    { civil: "Voiture", undercover: "Camion" }, { civil: "Mer", undercover: "Océan" },
+    { civil: "Pomme", undercover: "Poire" }, { civil: "Glace", undercover: "Sorbet" },
+    { civil: "Chaussure", undercover: "Chaussette" }, { civil: "Canapé", undercover: "Fauteuil" },
+    // Nouveaux mots :
+    { civil: "Plage", undercover: "Piscine" }, { civil: "Livre", undercover: "Magazine" },
+    { civil: "Montagne", undercover: "Colline" }, { civil: "Maison", undercover: "Appartement" },
+    { civil: "Horloge", undercover: "Montre" }, { civil: "Vapeur", undercover: "Fumée" }
+  ],
+
+  // Mode 2 : Hardcore (Des concepts abstraits ou très proches)
+  hardcore: [
+    { civil: "Mythe", undercover: "Légende" }, { civil: "Empathie", undercover: "Sympathie" },
+    { civil: "Sourire", undercover: "Rire" }, { civil: "Doute", undercover: "Soupçon" },
+    { civil: "Rêve", undercover: "Illusion" }, { civil: "Hasard", undercover: "Destin" },
+    { civil: "Secte", undercover: "Religion" }, { civil: "Célébrité", undercover: "Influenceur" },
+    { civil: "Orgueil", undercover: "Fierté" }, { civil: "Univers", undercover: "Galaxie" },
+    // Nouveaux mots :
+    { civil: "Secret", undercover: "Mystère" }, { civil: "Coupable", undercover: "Responsable" },
+    { civil: "Erreur", undercover: "Faute" }, { civil: "Pardon", undercover: "Excuse" },
+    { civil: "Bruit", undercover: "Son" }, { civil: "Découverte", undercover: "Invention" }
+  ],
+
+  // Mode 3 : Manga / Anime (Tropes et univers connus)
+  manga: [
+    { civil: "Chakra", undercover: "Ki" }, { civil: "Sharingan", undercover: "Byakugan" },
+    { civil: "Titan", undercover: "Démon" }, { civil: "Ninja", undercover: "Samouraï" },
+    { civil: "Katana", undercover: "Épée" }, { civil: "Pirate", undercover: "Marine" },
+    { civil: "Goule", undercover: "Vampire" }, { civil: "Alchimiste", undercover: "Sorcier" },
+    { civil: "Mecha", undercover: "Cyborg" }, { civil: "Hokage", undercover: "Empereur" },
+    // Nouveaux mots :
+    { civil: "Saiyan", undercover: "Namek" }, { civil: "Shinigami", undercover: "Fantôme" },
+    { civil: "Haki", undercover: "Nen" }, { civil: "Fruit du Démon", undercover: "Magie" },
+    { civil: "Guilde", undercover: "Clan" }, { civil: "Senpai", undercover: "Sensei" }
+  ],
+
+  // Mode 4 : Pays (Géographie, pièges culturels)
+  pays: [
+    { civil: "Suède", undercover: "Norvège" }, { civil: "Japon", undercover: "Chine" },
+    { civil: "Brésil", undercover: "Argentine" }, { civil: "Canada", undercover: "États-Unis" },
+    { civil: "Australie", undercover: "Nouvelle-Zélande" }, { civil: "Italie", undercover: "Espagne" },
+    { civil: "Maroc", undercover: "Algérie" }, { civil: "Égypte", undercover: "Turquie" },
+    { civil: "Irlande", undercover: "Écosse" }, { civil: "Corée du Sud", undercover: "Corée du Nord" },
+    // Nouveaux mots :
+    { civil: "Mexique", undercover: "Espagne" }, { civil: "Suisse", undercover: "Belgique" },
+    { civil: "Inde", undercover: "Pakistan" }, { civil: "Portugal", undercover: "Brésil" },
+    { civil: "Grèce", undercover: "Chypre" }, { civil: "Vietnam", undercover: "Thaïlande" }
+  ]
+};
+
+  /* ----------------------------------------------------------
+     IDENTITÉ DU JOUEUR
+     Persistée en sessionStorage : survive au refresh de page,
+     mais repart à zéro si l'onglet est fermé.
+  ---------------------------------------------------------- */
+  let myId = sessionStorage.getItem('undercoverId');
+  if (!myId) {
+    myId = Math.random().toString(36).slice(2, 11);
+    sessionStorage.setItem('undercoverId', myId);
+  }
+
+  /* ----------------------------------------------------------
+     ÉTAT LOCAL
+  ---------------------------------------------------------- */
+  let myName       = '';
+  let roleConfig   = { undercover: 1, mrWhite: 0 }; // Config rôles (hôte uniquement)
+  let myRoom       = '';    // code de la salle (ex : "WOLF")
+  let isHost       = false;
+  let unsubscribe  = null;  // fonction pour détacher le listener Firebase
+
+  /* ----------------------------------------------------------
+     UTILITAIRES
+  ---------------------------------------------------------- */
+  const $ = id => document.getElementById(id);
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function randInt(min, max)  { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = randInt(0, i);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function initial(name)  { return name.charAt(0).toUpperCase(); }
+
+  function roleColor(role) {
+    if (role === 'civil')       return 'text-blue-400';
+    if (role === 'undercover')  return 'text-purple-400';
+    return 'text-pink-400';
+  }
+
+  function roleLabel(role) {
+    if (role === 'civil')      return '🏙️ Civil';
+    if (role === 'undercover') return '🥸 Undercover';
+    return '❓ Mr. White';
+  }
+
+  /* Génère un code de salle à 4 lettres (sans I/O → confusion avec 1/0) */
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    return Array.from({ length: 4 }, () => chars[randInt(0, chars.length - 1)]).join('');
+  }
+
+  /* Affiche / masque l'état de chargement sur l'écran home */
+  function setLoading(show, text = 'Connexion…') {
+    $('home-loading').classList.toggle('hidden', !show);
+    $('home-loading').classList.toggle('flex', show);
+    $('home-buttons').classList.toggle('hidden', show);
+    $('join-form').classList.toggle('hidden', true);   // masque aussi le form
+    $('loading-text').textContent = text;
+  }
+
+  /* ----------------------------------------------------------
+     RÉFÉRENCES FIREBASE
+  ---------------------------------------------------------- */
+  const roomRef   = code      => ref(db, `rooms/${code}`);
+  const playerRef = (code, pid) => ref(db, `rooms/${code}/players/${pid}`);
+
+  /* ----------------------------------------------------------
+     ATTRIBUTION DES RÔLES (côté hôte)
+     Renvoie un objet d'updates Firebase multi-chemin
+  ---------------------------------------------------------- */
+  function buildRoleUpdates(players, wordPair) {
+    const ids  = Object.keys(players);
+    const n    = ids.length;
+    const { undercover: ucCount, mrWhite: mwCount } = roleConfig;
+    const roles = [
+      ...Array(n - ucCount - mwCount).fill('civil'),
+      ...Array(ucCount).fill('undercover'),
+      ...Array(mwCount).fill('mr_white'),
+    ];
+    const shuffled = shuffle(roles);
+    const updates  = {};
+    ids.forEach((pid, i) => {
+      updates[`rooms/${myRoom}/players/${pid}/role`] = shuffled[i];
+      updates[`rooms/${myRoom}/players/${pid}/word`] =
+        shuffled[i] === 'civil'       ? wordPair.civil
+        : shuffled[i] === 'undercover' ? wordPair.undercover
+        : null;
+    });
+    return updates;
+  }
+
+  /** Met à jour l'affichage de la config rôles dans le lobby (hôte) */
+  function renderLobbyRoleConfig(n) {
+    const config = $('lobby-role-config');
+    config.classList.toggle('hidden', n < 3);
+    if (n < 3) return;
+    const { undercover: uc, mrWhite: mw } = roleConfig;
+    const max = Math.floor((n - 1) / 2);
+    $('lobby-civil-count').textContent = n - uc - mw;
+    $('lobby-uc-count').textContent    = uc;
+    $('lobby-mw-count').textContent    = mw;
+    $('btn-uc-minus').disabled = uc <= 1;
+    $('btn-uc-plus').disabled  = uc + mw >= max;
+    $('btn-mw-minus').disabled = mw <= 0;
+    $('btn-mw-plus').disabled  = uc + mw >= max;
+  }
+
+  /* ----------------------------------------------------------
+     CONDITIONS DE VICTOIRE
+  ---------------------------------------------------------- */
+  function checkWin(room) {
+    const all        = Object.values(room.players || {});
+    const alive      = all.filter(p => !p.eliminated);
+    const civils     = alive.filter(p => p.role === 'civil');
+    const undercovrs = alive.filter(p => p.role === 'undercover');
+    const mrWhites   = alive.filter(p => p.role === 'mr_white');
+
+    if (undercovrs.length === 0 && mrWhites.length === 0)
+      return { winner: 'civil',     title: 'Les Civils ont gagné !',      subtitle: 'Tous les imposteurs ont été démasqués.' };
+    if (civils.length <= 1)
+      return { winner: 'undercover',title: 'Les Undercovers ont gagné !', subtitle: 'Les civils sont en minorité.' };
+    if (alive.length === 2 && mrWhites.length === 1)
+      return { winner: 'mr_white',  title: 'Mr. White a gagné !',         subtitle: "L'inconnu a survécu jusqu'au bout !" };
+    return null;
+  }
+
+  /* ----------------------------------------------------------
+     LISTENER CENTRAL — réagit à chaque modification Firebase
+  ---------------------------------------------------------- */
+  function listenToRoom() {
+    if (unsubscribe) unsubscribe();           // détache l'ancien listener
+    unsubscribe = onValue(roomRef(myRoom), snap => {
+      if (!snap.exists()) { handleRoomDeleted(); return; }
+      const room = snap.val();
+      /* Routeur de statut */
+      if (room.status === 'lobby')   { renderLobby(room);  return; }
+      if (room.status === 'playing') { renderRole(room);   return; }
+      if (room.status === 'board')   { renderBoard(room);  return; }
+      if (room.status === 'ended')   { renderEnd(room);    return; }
+    });
+  }
+
+  function handleRoomDeleted() {
+    /* L'hôte a quitté et supprimé la salle */
+    if (unsubscribe) unsubscribe();
+    myRoom = ''; isHost = false;
+    alert('La salle a été fermée par l\'hôte.');
+    showScreen('screen-home');
+    $('home-buttons').classList.remove('hidden');
+    $('home-loading').classList.add('hidden');
+  }
+
+  /* ============================================================
+     ÉCRAN HOME
+  ============================================================ */
+  function initHome() {
+    const inputName  = $('input-name');
+    const btnCreate  = $('btn-create');
+    const btnShowJ   = $('btn-show-join');
+    const joinForm   = $('join-form');
+    const inputCode  = $('input-room-code');
+    const btnJoin    = $('btn-join');
+    const btnCancel  = $('btn-cancel-join');
+    const nameErr    = $('name-error');
+    const joinErr    = $('join-error');
+
+    /* Forcer majuscules dans le champ code */
+    inputCode.addEventListener('input', () => {
+      inputCode.value = inputCode.value.toUpperCase().replace(/[^A-Z]/g, '');
+    });
+
+    function getValidName() {
+      const v = inputName.value.trim();
+      if (!v || v.length < 2) {
+        nameErr.textContent = 'Entre ton prénom (min 2 caractères).';
+        nameErr.classList.remove('hidden');
+        return null;
+      }
+      nameErr.classList.add('hidden');
+      return v;
+    }
+
+    /* --- Afficher le formulaire rejoindre --- */
+    btnShowJ.addEventListener('click', () => {
+      $('home-buttons').classList.add('hidden');
+      joinForm.classList.remove('hidden');
+      inputCode.focus();
+    });
+    btnCancel.addEventListener('click', () => {
+      joinForm.classList.add('hidden');
+      $('home-buttons').classList.remove('hidden');
+      joinErr.classList.add('hidden');
+    });
+
+    /* --- Créer une partie --- */
+    btnCreate.addEventListener('click', async () => {
+      const name = getValidName();
+      if (!name) return;
+      myName = name; isHost = true;
+      setLoading(true, 'Création de la salle…');
+      try {
+        /* Cherche un code libre — timeout 6s */
+        let code, exists;
+        do {
+          code = generateCode();
+          const snap = await withTimeout(get(roomRef(code)));
+          exists = snap.exists();
+        } while (exists);
+
+        myRoom = code;
+        await withTimeout(set(roomRef(code), {
+          host: myId, status: 'lobby', theme: 'generique',
+          wordPair: null, createdAt: Date.now(),
+          players: {
+            [myId]: { name: myName, role: null, word: null, eliminated: false, ready: false }
+          }
+        }));
+        setLoading(false);
+        listenToRoom();
+        showScreen('screen-lobby');
+      } catch (err) {
+        isHost = false; myRoom = '';
+        setLoading(false);
+        nameErr.textContent = err.message;
+        nameErr.classList.remove('hidden');
+      }
+    });
+
+    /* --- Rejoindre une partie --- */
+    async function doJoin() {
+      const name = getValidName();
+      if (!name) return;
+      const code = inputCode.value.trim().toUpperCase();
+      if (code.length !== 4) {
+        joinErr.textContent = 'Le code doit faire 4 lettres.';
+        joinErr.classList.remove('hidden'); return;
+      }
+      joinErr.classList.add('hidden');
+      setLoading(true, 'Connexion à la salle…');
+      try {
+        const snap = await withTimeout(get(roomRef(code)));
+        if (!snap.exists()) {
+          setLoading(false);
+          joinErr.textContent = 'Salle introuvable. Vérifie le code.';
+          joinErr.classList.remove('hidden'); return;
+        }
+        const room = snap.val();
+        if (room.status !== 'lobby') {
+          setLoading(false);
+          joinErr.textContent = 'La partie a déjà commencé.';
+          joinErr.classList.remove('hidden'); return;
+        }
+        myName = name; myRoom = code; isHost = false;
+        await withTimeout(set(playerRef(code, myId), {
+          name: myName, role: null, word: null, eliminated: false, ready: false
+        }));
+        setLoading(false);
+        listenToRoom();
+        showScreen('screen-lobby');
+      } catch (err) {
+        setLoading(false);
+        joinErr.textContent = 'Erreur : ' + err.message;
+        joinErr.classList.remove('hidden');
+      }
+    }
+    btnJoin.addEventListener('click', doJoin);
+    inputCode.addEventListener('keydown', e => { if (e.key === 'Enter') doJoin(); });
+  }
+
+  /* ============================================================
+     ÉCRAN LOBBY
+  ============================================================ */
+  function renderLobby(room) {
+    showScreen('screen-lobby');
+    $('lobby-code').textContent = myRoom;
+
+    const players = room.players || {};
+    const ids     = Object.keys(players);
+    const n       = ids.length;
+    $('lobby-player-count').textContent = `${n} joueur${n > 1 ? 's' : ''}`;
+
+    /* Liste des joueurs */
+    $('lobby-player-list').innerHTML = ids.map(pid => {
+      const p      = players[pid];
+      const isMe   = pid === myId;
+      const isH    = pid === room.host;
+      return `
+        <li class="flex items-center gap-3 bg-gray-800 rounded-xl px-4 py-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+            ${initial(p.name)}
+          </div>
+          <span class="font-medium flex-1">${p.name}${isMe ? ' <span class="text-xs text-gray-500">(toi)</span>' : ''}</span>
+          ${isH
+            ? '<span class="text-xs text-violet-400 font-semibold">Hôte</span>'
+            : '<span class="flex items-center gap-1"><span class="online-dot"></span><span class="text-xs text-green-400">En ligne</span></span>'
+          }
+        </li>`;
+    }).join('');
+
+    /* Affichage hôte vs invité */
+    if (isHost) {
+      $('lobby-host-section').classList.remove('hidden');
+      $('lobby-guest-section').classList.add('hidden');
+      $('lobby-theme-wrap').style.display = '';
+      renderLobbyRoleConfig(n);
+      const btnStart = $('btn-start-game');
+      btnStart.disabled = n < 3;
+      $('lobby-hint').textContent = n < 3
+        ? `Encore ${3 - n} joueur${3 - n > 1 ? 's' : ''} pour démarrer`
+        : '✓ Tout le monde est là, c\'est parti !';
+    } else {
+      $('lobby-host-section').classList.add('hidden');
+      $('lobby-guest-section').classList.remove('hidden');
+      $('lobby-theme-wrap').style.display = 'none';
+      $('lobby-role-config').style.display = 'none';
+    }
+  }
+
+  function initLobby() {
+    /* Boutons +/- de la répartition des rôles
+       On lit le nombre de joueurs depuis l'état Firebase actuel */
+    function currentPlayerCount() {
+      return parseInt($('lobby-player-count').textContent) || 3;
+    }
+    $('btn-uc-minus').addEventListener('click', () => {
+      if (roleConfig.undercover > 1) { roleConfig.undercover--; renderLobbyRoleConfig(currentPlayerCount()); }
+    });
+    $('btn-uc-plus').addEventListener('click', () => {
+      const n = currentPlayerCount();
+      const { undercover: uc, mrWhite: mw } = roleConfig;
+      if (uc + mw < Math.floor((n - 1) / 2)) { roleConfig.undercover++; renderLobbyRoleConfig(n); }
+    });
+    $('btn-mw-minus').addEventListener('click', () => {
+      if (roleConfig.mrWhite > 0) { roleConfig.mrWhite--; renderLobbyRoleConfig(currentPlayerCount()); }
+    });
+    $('btn-mw-plus').addEventListener('click', () => {
+      const n = currentPlayerCount();
+      const { undercover: uc, mrWhite: mw } = roleConfig;
+      if (uc + mw < Math.floor((n - 1) / 2)) { roleConfig.mrWhite++; renderLobbyRoleConfig(n); }
+    });
+
+    $('btn-start-game').addEventListener('click', async () => {
+      const theme    = $('lobby-theme').value;
+      const snap     = await get(roomRef(myRoom));
+      const room     = snap.val();
+      const wordPair = wordDictionary[theme][randInt(0, wordDictionary[theme].length - 1)];
+      const updates  = buildRoleUpdates(room.players, wordPair);
+      updates[`rooms/${myRoom}/status`]   = 'playing';
+      updates[`rooms/${myRoom}/theme`]    = theme;
+      updates[`rooms/${myRoom}/wordPair`] = wordPair;
+      await update(ref(db), updates);
+    });
+  }
+
+  /* ============================================================
+     ÉCRAN RÉVÉLATION DU RÔLE
+  ============================================================ */
+  function renderRole(room) {
+    const me = (room.players || {})[myId];
+    if (!me) return;
+
+    /* Si le joueur a déjà vu son rôle → afficher l'état d'attente */
+    if (me.ready) {
+      showScreen('screen-role');
+      $('btn-role-ready').classList.add('hidden');
+      $('role-waiting').classList.remove('hidden');
+      const allPlayers  = Object.values(room.players || {});
+      const readyCount  = allPlayers.filter(p => p.ready).length;
+      $('role-waiting-count').textContent = `${readyCount} / ${allPlayers.length} joueurs prêts…`;
+
+      /* Quand tout le monde est prêt, l'hôte avance vers le plateau */
+      if (readyCount === allPlayers.length && isHost) {
+        update(ref(db), { [`rooms/${myRoom}/status`]: 'board' });
+      }
+      return;
+    }
+
+    /* Affichage du rôle */
+    showScreen('screen-role');
+    $('btn-role-ready').classList.remove('hidden');
+    $('role-waiting').classList.add('hidden');
+    $('role-avatar').textContent      = initial(me.name);
+    $('role-player-name').textContent = me.name;
+
+    const card  = $('role-card');
+    const badge = $('role-badge');
+    const word  = $('role-word');
+    const hint  = $('role-hint');
+
+    if (me.role === 'civil') {
+      card.className  = 'w-full rounded-2xl p-6 border border-blue-700 bg-blue-900/30';
+      badge.className = 'text-xs font-semibold uppercase tracking-widest mb-3 text-blue-400';
+      badge.textContent = '🏙️ Tu es Civil';
+      word.textContent  = me.word;
+      hint.textContent  = 'Décris ce mot sans le dire. Démasque les imposteurs !';
+    } else if (me.role === 'undercover') {
+      card.className  = 'w-full rounded-2xl p-6 border border-purple-700 bg-purple-900/30';
+      badge.className = 'text-xs font-semibold uppercase tracking-widest mb-3 text-purple-400';
+      badge.textContent = '🥸 Tu es Undercover';
+      word.textContent  = me.word;
+      hint.textContent  = 'Ton mot est proche mais différent. Sois discret !';
+    } else {
+      card.className  = 'w-full rounded-2xl p-6 border border-pink-700 bg-pink-900/30';
+      badge.className = 'text-xs font-semibold uppercase tracking-widest mb-3 text-pink-400';
+      badge.textContent = "❓ Tu es Mr. White";
+      word.textContent  = '???';
+      hint.textContent  = "Tu n'as aucun mot. Improvise et survie !";
+    }
+  }
+
+  function initRoleScreen() {
+    $('btn-role-ready').addEventListener('click', async () => {
+      $('btn-role-ready').disabled = true;
+      await update(ref(db), { [`rooms/${myRoom}/players/${myId}/ready`]: true });
+    });
+  }
+
+  /* ============================================================
+     ÉCRAN PLATEAU DE JEU
+  ============================================================ */
+  const themeLabels = {
+    generique: '🌍 Générique', hardcore: '🔥 Hardcore',
+    manga: '⚔️ Manga', pays: '🗺️ Pays'
+  };
+
+  function renderBoard(room) {
+    showScreen('screen-board');
+    const players = room.players || {};
+    const pArr    = Object.entries(players).map(([id, p]) => ({ id, ...p }));
+    const alive   = pArr.filter(p => !p.eliminated);
+
+    $('board-theme-badge').textContent = themeLabels[room.theme] || room.theme;
+    $('board-status').textContent = `${alive.length} joueur${alive.length > 1 ? 's' : ''} en jeu`;
+
+    const civils     = alive.filter(p => p.role === 'civil').length;
+    const undercovrs = alive.filter(p => p.role === 'undercover').length;
+    const mrWhites   = alive.filter(p => p.role === 'mr_white').length;
+
+    $('board-counters').innerHTML = `
+      <div class="flex-1 bg-blue-900/30 border border-blue-800 rounded-xl px-3 py-2 text-center">
+        <p class="text-xl font-bold text-blue-400">${civils}</p><p class="text-xs text-blue-300">Civils</p>
+      </div>
+      <div class="flex-1 bg-purple-900/30 border border-purple-800 rounded-xl px-3 py-2 text-center">
+        <p class="text-xl font-bold text-purple-400">${undercovrs}</p><p class="text-xs text-purple-300">Undercover</p>
+      </div>
+      <div class="flex-1 bg-pink-900/30 border border-pink-800 rounded-xl px-3 py-2 text-center">
+        <p class="text-xl font-bold text-pink-400">${mrWhites}</p><p class="text-xs text-pink-300">Mr. White</p>
+      </div>`;
+
+    $('player-grid').innerHTML = pArr.map(p => `
+      <div class="player-card bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col items-center gap-3 transition-all ${p.eliminated ? 'eliminated' : ''}">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-2xl font-black shadow-md">
+          ${initial(p.name)}
+        </div>
+        <p class="font-semibold text-sm text-center truncate w-full">${p.name}${p.id === myId ? '<br><span class="text-xs text-violet-400">(toi)</span>' : ''}</p>
+        ${p.eliminated ? `
+          <div class="text-center">
+            <p class="text-xs ${roleColor(p.role)} font-semibold">${roleLabel(p.role)}</p>
+            ${p.word ? `<p class="text-xs text-gray-400">"${p.word}"</p>` : ''}
+          </div>
+          <div class="w-full py-1 bg-red-900/30 border border-red-800 rounded-lg text-center text-xs text-red-400 font-semibold">Éliminé</div>
+        ` : `
+          <button data-pid="${p.id}"
+            class="btn-eliminate w-full py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all active:scale-95 ${p.id === myId ? 'opacity-30 cursor-not-allowed' : ''}"
+            ${p.id === myId ? 'disabled' : ''}>
+            <i class="fa-solid fa-skull mr-1"></i> Éliminer
+          </button>
+        `}
+      </div>`).join('');
+
+    /* Listeners élimination */
+    $('player-grid').querySelectorAll('.btn-eliminate').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; // évite le double-clic
+        const pid = btn.dataset.pid;
+        const updates = { [`rooms/${myRoom}/players/${pid}/eliminated`]: true };
+        /* Vérifie la victoire après élimination */
+        const snap = await get(roomRef(myRoom));
+        const room = snap.val();
+        room.players[pid].eliminated = true; // simule pour la vérif locale
+        const win = checkWin(room);
+        if (win) {
+          updates[`rooms/${myRoom}/status`]       = 'ended';
+          updates[`rooms/${myRoom}/winner`]       = win.winner;
+          updates[`rooms/${myRoom}/winTitle`]     = win.title;
+          updates[`rooms/${myRoom}/winSubtitle`]  = win.subtitle;
+        }
+        await update(ref(db), updates);
+      });
+    });
+  }
+
+  function initBoardScreen() {
+    $('btn-check-win').addEventListener('click', async () => {
+      const snap = await get(roomRef(myRoom));
+      const win  = checkWin(snap.val());
+      if (win) {
+        await update(ref(db), {
+          [`rooms/${myRoom}/status`]:      'ended',
+          [`rooms/${myRoom}/winner`]:      win.winner,
+          [`rooms/${myRoom}/winTitle`]:    win.title,
+          [`rooms/${myRoom}/winSubtitle`]: win.subtitle,
+        });
+      } else {
+        const btn = $('btn-check-win');
+        btn.textContent = '✓ La partie continue…';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fa-solid fa-flag-checkered mr-2"></i> Vérifier la victoire';
+        }, 1500);
+      }
+    });
+  }
+
+  /* ============================================================
+     ÉCRAN FIN DE PARTIE
+  ============================================================ */
+  function renderEnd(room) {
+    showScreen('screen-end');
+    const banner = $('end-banner');
+    const w      = room.winner;
+
+    if (w === 'civil') {
+      banner.className = 'rounded-2xl p-6 text-center bg-blue-900/40 border border-blue-700';
+      $('end-icon').textContent = '🏙️';
+    } else if (w === 'undercover') {
+      banner.className = 'rounded-2xl p-6 text-center bg-purple-900/40 border border-purple-700';
+      $('end-icon').textContent = '🥸';
+    } else {
+      banner.className = 'rounded-2xl p-6 text-center bg-pink-900/40 border border-pink-700';
+      $('end-icon').textContent = '❓';
+    }
+
+    $('end-title').textContent    = room.winTitle    || '';
+    $('end-subtitle').textContent = room.winSubtitle || '';
+
+    $('end-words').innerHTML = `
+      <div class="flex justify-between items-center py-2 border-b border-gray-800">
+        <span class="text-blue-400 font-semibold">🏙️ Mot Civil</span>
+        <span class="text-white font-bold">${room.wordPair?.civil || '—'}</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-gray-800">
+        <span class="text-purple-400 font-semibold">🥸 Mot Undercover</span>
+        <span class="text-white font-bold">${room.wordPair?.undercover || '—'}</span>
+      </div>
+      <div class="flex justify-between items-center py-2">
+        <span class="text-pink-400 font-semibold">❓ Mot Mr. White</span>
+        <span class="text-gray-400 italic">Aucun</span>
+      </div>`;
+
+    $('end-player-list').innerHTML = Object.values(room.players || {}).map(p => `
+      <div class="flex items-center justify-between bg-gray-900 rounded-xl px-4 py-3 ${p.eliminated ? 'opacity-50' : ''}">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+            ${initial(p.name)}
+          </div>
+          <div>
+            <p class="font-semibold text-sm">${p.name}</p>
+            <p class="text-xs ${roleColor(p.role)}">${roleLabel(p.role)}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-bold">${p.word || '???'}</p>
+          ${p.eliminated ? '<p class="text-xs text-red-400">Éliminé</p>' : '<p class="text-xs text-green-400">Survivant</p>'}
+        </div>
+      </div>`).join('');
+
+    /* Bouton rejouer : hôte uniquement */
+    if (isHost) {
+      $('end-host-actions').classList.remove('hidden');
+      $('end-guest-hint').classList.add('hidden');
+    } else {
+      $('end-host-actions').classList.add('hidden');
+      $('end-guest-hint').classList.remove('hidden');
+    }
+  }
+
+  function initEndScreen() {
+    /* Rejouer — remet tous les joueurs à zéro, retour en lobby */
+    $('btn-replay').addEventListener('click', async () => {
+      if (!isHost) return;
+      const snap    = await get(roomRef(myRoom));
+      const players = snap.val()?.players || {};
+      const updates = {
+        [`rooms/${myRoom}/status`]:   'lobby',
+        [`rooms/${myRoom}/wordPair`]: null,
+        [`rooms/${myRoom}/winner`]:   null,
+      };
+      Object.keys(players).forEach(pid => {
+        updates[`rooms/${myRoom}/players/${pid}/role`]       = null;
+        updates[`rooms/${myRoom}/players/${pid}/word`]       = null;
+        updates[`rooms/${myRoom}/players/${pid}/eliminated`] = false;
+        updates[`rooms/${myRoom}/players/${pid}/ready`]      = false;
+      });
+      await update(ref(db), updates);
+    });
+
+    /* Quitter — retire le joueur ; l'hôte supprime toute la salle */
+    $('btn-leave').addEventListener('click', async () => {
+      if (unsubscribe) unsubscribe();
+      if (isHost) {
+        await remove(roomRef(myRoom));
+      } else {
+        await remove(playerRef(myRoom, myId));
+      }
+      myRoom = ''; isHost = false;
+      showScreen('screen-home');
+      $('home-buttons').classList.remove('hidden');
+      $('home-loading').classList.add('hidden');
+    });
+  }
+
+  /* ============================================================
+     INIT GLOBAL
+  ============================================================ */
+  initHome();
+  initLobby();
+  initRoleScreen();
+  initBoardScreen();
+  initEndScreen();
+  showScreen('screen-home');
+</script>
+</body>
+</html>

@@ -688,7 +688,7 @@
         document.getElementById('dist-role-label').className = 'text-xs font-semibold uppercase tracking-widest mb-2 text-pink-400';
       }
 
-      document.getElementById('dist-role-label').textContent = roleText;
+      //document.getElementById('dist-role-label').textContent = roleText;
       document.getElementById('dist-word').textContent = wordText;
       document.getElementById('dist-word-hint').textContent = hintText;
 
@@ -796,10 +796,6 @@
             ${isEliminated ? `
               <div class="text-center">
                 <p class="text-xs ${roleColor(p.role)} font-semibold">${roleLabel(p.role)}</p>
-                ${p.word ? `<p class="text-xs text-gray-400">"${p.word}"</p>` : ''}
-              </div>
-              <div class="w-full py-1 bg-red-900/30 border border-red-800 rounded-lg text-center text-xs text-red-400 font-semibold">
-                Éliminé
               </div>
             ` : `
               <button data-index="${i}" class="btn-eliminate w-full py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all active:scale-95">
@@ -900,22 +896,23 @@
       title.textContent = result.title;
       subtitle.textContent = result.subtitle;
 
-      // Affiche les mots secrets
+
+      // Affiche uniquement les rôles (pas les mots secrets)
       const endWords = document.getElementById('end-words');
       endWords.innerHTML = `
-        <div class="flex justify-between items-center py-2 border-b border-gray-800">
-          <span class="text-blue-400 font-semibold">🏙️ Mot Civil</span>
-          <span class="text-white font-bold">${gameState.wordPair.civil}</span>
-        </div>
-        <div class="flex justify-between items-center py-2 border-b border-gray-800">
-          <span class="text-purple-400 font-semibold">🥸 Mot Undercover</span>
-          <span class="text-white font-bold">${gameState.wordPair.undercover}</span>
-        </div>
-        <div class="flex justify-between items-center py-2">
-          <span class="text-pink-400 font-semibold">❓ Mot Mr. White</span>
-          <span class="text-gray-400 italic">Aucun</span>
-        </div>
-      `;
+       <div class="flex justify-between items-center py-2 border-b border-gray-800">
+        <span class="text-blue-400 font-semibold">🏙️ Civils</span>
+        <span class="text-white font-bold">Connaissaient le mot</span>
+       </div>
+       <div class="flex justify-between items-center py-2 border-b border-gray-800">
+        <span class="text-purple-400 font-semibold">🥸 Undercovers</span>
+        <span class="text-white font-bold">Avaient un mot différent</span>
+       </div>
+      <div class="flex justify-between items-center py-2">
+       <span class="text-pink-400 font-semibold">❓ Mr. White</span>
+       <span class="text-gray-400 italic">N'avait aucun mot</span>
+      </div>
+`;
 
       // Récapitulatif des joueurs
       const endList = document.getElementById('end-player-list');

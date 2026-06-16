@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Undercover — Hors Ligne</title>
+  <!--
+    VERSION HORS LIGNE — Aucune dépendance externe.
+    • Tailwind remplacé par un CSS artisanal couvrant exactement les classes utilisées.
+    • FontAwesome remplacé par des emojis Unicode.
+    Fonctionne sans connexion internet dès le premier chargement.
+  -->
+  <style>
+    /* ============================================================
+       RESET
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    body  { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    button { cursor: pointer; font-family: inherit; font-size: inherit; border: none; background: none; }
+    input, select { font-family: inherit; font-size: inherit; color: inherit; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    input::placeholder { color: #6b7280; }
+
+    /* ============================================================
+       DISPLAY
+    ============================================================ */
+    .hidden           { display: none !important; }
+    .block            { display: block; }
+    .flex             { display: flex; }
+    .grid             { display: grid; }
+
+    /* ============================================================
+       FLEXBOX
+    ============================================================ */
+    .flex-col         { flex-direction: column; }
+    .flex-1           { flex: 1 1 0%; }
+    .items-center     { align-items: center; }
+    .items-start      { align-items: flex-start; }
+    .justify-center   { justify-content: center; }
+    .justify-between  { justify-content: space-between; }
+
+    /* ============================================================
+       GRID
+    ============================================================ */
+    .grid-cols-2      { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    /* ============================================================
+       SIZING
+    ============================================================ */
+    .w-full           { width: 100%; }
+    .w-6              { width:  1.5rem; }
+    .w-8              { width:  2rem; }
+    .h-8              { height: 2rem; }
+    .w-14             { width:  3.5rem; }
+    .h-14             { height: 3.5rem; }
+    .w-20             { width:  5rem; }
+    .h-20             { height: 5rem; }
+    .min-h-screen     { min-height: 100vh; }
+    .max-w-lg         { max-width: 32rem; }
+    .overflow-y-auto  { overflow-y: auto; }
+
+    /* ============================================================
+       POSITION
+    ============================================================ */
+    .relative         { position: relative; }
+    .mt-auto          { margin-top: auto; }
+
+    /* ============================================================
+       GAP
+    ============================================================ */
+    .gap-2  { gap: .5rem;  }
+    .gap-3  { gap: .75rem; }
+    .gap-4  { gap: 1rem;   }
+    .gap-6  { gap: 1.5rem; }
+    .gap-8  { gap: 2rem;   }
+
+    /* ============================================================
+       SPACE-Y (vertical children spacing)
+    ============================================================ */
+    .space-y-1 > * + * { margin-top: .25rem; }
+    .space-y-2 > * + * { margin-top: .5rem;  }
+    .space-y-3 > * + * { margin-top: .75rem; }
+
+    /* ============================================================
+       PADDING
+    ============================================================ */
+    .p-4   { padding: 1rem;   }
+    .p-6   { padding: 1.5rem; }
+    .px-2  { padding-left: .5rem;   padding-right: .5rem;   }
+    .px-3  { padding-left: .75rem;  padding-right: .75rem;  }
+    .px-4  { padding-left: 1rem;    padding-right: 1rem;    }
+    .px-5  { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .px-6  { padding-left: 1.5rem;  padding-right: 1.5rem;  }
+    .py-1  { padding-top: .25rem;  padding-bottom: .25rem;  }
+    .py-2  { padding-top: .5rem;   padding-bottom: .5rem;   }
+    .py-3  { padding-top: .75rem;  padding-bottom: .75rem;  }
+    .py-4  { padding-top: 1rem;    padding-bottom: 1rem;    }
+    .py-5  { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+    .py-6  { padding-top: 1.5rem;  padding-bottom: 1.5rem;  }
+    .py-8  { padding-top: 2rem;    padding-bottom: 2rem;    }
+    .py-12 { padding-top: 3rem;    padding-bottom: 3rem;    }
+    .pt-4  { padding-top: 1rem; }
+
+    /* ============================================================
+       MARGIN
+    ============================================================ */
+    .mb-1  { margin-bottom: .25rem;  }
+    .mb-2  { margin-bottom: .5rem;   }
+    .mb-3  { margin-bottom: .75rem;  }
+    .mb-6  { margin-bottom: 1.5rem;  }
+    .mb-10 { margin-bottom: 2.5rem;  }
+    .mr-1  { margin-right: .25rem;   }
+    .mr-2  { margin-right: .5rem;    }
+    .ml-2  { margin-left:  .5rem;    }
+    .mt-1  { margin-top:   .25rem;   }
+
+    /* ============================================================
+       TYPOGRAPHY
+    ============================================================ */
+    .text-xs   { font-size: .75rem;   line-height: 1rem;    }
+    .text-sm   { font-size: .875rem;  line-height: 1.25rem; }
+    .text-lg   { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl   { font-size: 1.25rem;  line-height: 1.75rem; }
+    .text-2xl  { font-size: 1.5rem;   line-height: 2rem;    }
+    .text-3xl  { font-size: 1.875rem; line-height: 2.25rem; }
+    .text-4xl  { font-size: 2.25rem;  line-height: 2.5rem;  }
+    .text-5xl  { font-size: 3rem;     line-height: 1;       }
+    .text-6xl  { font-size: 3.75rem;  line-height: 1;       }
+    .text-7xl  { font-size: 4.5rem;   line-height: 1;       }
+    .font-medium   { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold     { font-weight: 700; }
+    .font-black    { font-weight: 900; }
+    .uppercase     { text-transform: uppercase; }
+    .tracking-wider  { letter-spacing: .05em; }
+    .tracking-widest { letter-spacing: .1em;  }
+    .italic      { font-style: italic; }
+    .text-center { text-align: center; }
+    .text-left   { text-align: left;   }
+    .text-right  { text-align: right;  }
+    .truncate    { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ============================================================
+       TEXT COLORS
+    ============================================================ */
+    .text-white    { color: #ffffff; }
+    .text-gray-400 { color: #9ca3af; }
+    .text-gray-500 { color: #6b7280; }
+    .text-blue-300 { color: #93c5fd; }
+    .text-blue-400 { color: #60a5fa; }
+    .text-purple-300 { color: #d8b4fe; }
+    .text-purple-400 { color: #c084fc; }
+    .text-pink-300   { color: #f9a8d4; }
+    .text-pink-400   { color: #f472b6; }
+    .text-red-400    { color: #f87171; }
+    .text-green-400  { color: #4ade80; }
+    .text-violet-400 { color: #a78bfa; }
+
+    /* ============================================================
+       BACKGROUND COLORS
+    ============================================================ */
+    .bg-gray-950  { background-color: #030712; }
+    .bg-gray-900  { background-color: #111827; }
+    .bg-gray-800  { background-color: #1f2937; }
+    .bg-gray-700  { background-color: #374151; }
+    .bg-violet-600 { background-color: #7c3aed; }
+    .bg-violet-500 { background-color: #8b5cf6; }
+    .bg-red-600    { background-color: #dc2626; }
+    .bg-red-500    { background-color: #ef4444; }
+
+    /* Backgrounds avec opacité (Tailwind bg-color/opacity) */
+    .bg-blue-900\/30   { background-color: rgba(30,  58, 138, .3); }
+    .bg-purple-900\/30 { background-color: rgba(88,  28, 135, .3); }
+    .bg-pink-900\/30   { background-color: rgba(131, 24,  67, .3); }
+    .bg-red-900\/30    { background-color: rgba(127, 29,  29, .3); }
+    .bg-blue-900\/40   { background-color: rgba(30,  58, 138, .4); }
+    .bg-purple-900\/40 { background-color: rgba(88,  28, 135, .4); }
+    .bg-pink-900\/40   { background-color: rgba(131, 24,  67, .4); }
+
+    /* ============================================================
+       GRADIENTS
+    ============================================================ */
+    /* Boutons principaux (droite, violet→rose) */
+    .bg-gradient-to-r.from-violet-600.to-pink-600 {
+      background: linear-gradient(to right, #7c3aed, #db2777);
+    }
+    /* Hover sur boutons gradient */
+    .bg-gradient-to-r.from-violet-600.to-pink-600:hover {
+      background: linear-gradient(to right, #8b5cf6, #ec4899);
+    }
+    /* Avatars (diagonale, violet→rose) */
+    .bg-gradient-to-br.from-violet-500.to-pink-500 {
+      background: linear-gradient(to bottom right, #8b5cf6, #ec4899);
+    }
+
+    /* ============================================================
+       BORDERS
+    ============================================================ */
+    .border   { border-width: 1px; border-style: solid; border-color: currentColor; }
+    .border-2 { border-width: 2px; border-style: solid; border-color: currentColor; }
+    .border-b { border-bottom: 1px solid currentColor; }
+    .border-gray-600 { border-color: #4b5563; }
+    .border-gray-700 { border-color: #374151; }
+    .border-gray-800 { border-color: #1f2937; }
+    .border-blue-700 { border-color: #1d4ed8; }
+    .border-blue-800 { border-color: #1e40af; }
+    .border-purple-700 { border-color: #7e22ce; }
+    .border-purple-800 { border-color: #6b21a8; }
+    .border-pink-700   { border-color: #be185d; }
+    .border-red-800    { border-color: #991b1b; }
+    .border-violet-400 { border-color: #a78bfa; }
+    .border-violet-500 { border-color: #8b5cf6; }
+
+    /* ============================================================
+       BORDER RADIUS
+    ============================================================ */
+    .rounded-lg   { border-radius: .5rem;   }
+    .rounded-xl   { border-radius: .75rem;  }
+    .rounded-2xl  { border-radius: 1rem;    }
+    .rounded-full { border-radius: 9999px;  }
+
+    /* ============================================================
+       SHADOWS
+    ============================================================ */
+    .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,.3), 0 2px 4px -2px rgba(0,0,0,.2); }
+    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,.3), 0 4px 6px -4px rgba(0,0,0,.2); }
+    .shadow-violet-900\/40 { box-shadow: 0 10px 15px -3px rgba(76, 29, 149, .4); }
+    .shadow-violet-900\/50 { box-shadow: 0 10px 15px -3px rgba(76, 29, 149, .5); }
+    /* Combinaison la plus courante : shadow-lg + couleur violet */
+    .shadow-lg.shadow-violet-900\/40 { box-shadow: 0 10px 20px -3px rgba(76, 29, 149, .45); }
+    .shadow-lg.shadow-violet-900\/50 { box-shadow: 0 10px 20px -3px rgba(76, 29, 149, .55); }
+
+    /* ============================================================
+       OPACITY
+    ============================================================ */
+    .opacity-0  { opacity: 0;    }
+    .opacity-40 { opacity: .4;   }
+    .opacity-50 { opacity: .5;   }
+    .opacity-80 { opacity: .8;   }
+
+    /* ============================================================
+       TRANSITIONS
+    ============================================================ */
+    .transition-all    { transition: all 150ms cubic-bezier(.4,0,.2,1); }
+    .transition-colors { transition: color 150ms cubic-bezier(.4,0,.2,1),
+                                    background-color 150ms cubic-bezier(.4,0,.2,1),
+                                    border-color 150ms cubic-bezier(.4,0,.2,1); }
+    .duration-200 { transition-duration: 200ms; }
+
+    /* ============================================================
+       INTERACTIVE STATES
+    ============================================================ */
+    .pointer-events-none { pointer-events: none; }
+    .select-none  { user-select: none; -webkit-user-select: none; }
+    .cursor-pointer { cursor: pointer; }
+    .appearance-none { -webkit-appearance: none; appearance: none; }
+
+    /* Hover */
+    .hover\:text-white:hover    { color: #ffffff; }
+    .hover\:text-red-400:hover  { color: #f87171; }
+    .hover\:bg-gray-700:hover   { background-color: #374151; }
+    .hover\:bg-violet-500:hover { background-color: #8b5cf6; }
+    .hover\:bg-red-500:hover    { background-color: #ef4444; }
+    .hover\:border-violet-400:hover { border-color: #a78bfa; }
+
+    /* Active */
+    .active\:scale-95:active { transform: scale(.95); }
+
+    /* Disabled */
+    button:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Focus — ciblage direct sur les champs de saisie */
+    #player-name-input:focus,
+    #theme-select:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #8b5cf6;
+    }
+
+    /* ============================================================
+       COMPOSANTS SPÉCIFIQUES AU JEU
+    ============================================================ */
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #4c4c8a; border-radius: 2px; }
+
+    /* Animation d'apparition des écrans */
+    .screen { display: none; animation: fadeIn .3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+
+    /* Carte joueur éliminé */
+    .player-card.eliminated { opacity: .45; filter: grayscale(70%); }
+
+    /* Gradient titre */
+    .title-gradient {
+      background: linear-gradient(135deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Bouton "maintenir" : pulsation + blocage sélection */
+    #btn-hold { user-select: none; -webkit-user-select: none; animation: pulse-border 2s infinite; }
+    #btn-hold:active { animation: none; }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0 0   rgba(167,139,250,.4); }
+      50%      { box-shadow: 0 0 0 8px rgba(167,139,250,0);  }
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center">
+
+  <!-- Conteneur centré mobile-first -->
+  <div id="app" class="w-full max-w-lg min-h-screen flex flex-col">
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 1 : ACCUEIL                               -->
+    <!-- ================================================ -->
+    <div id="screen-home" class="screen active flex-col items-center justify-center min-h-screen px-6 py-12 text-center">
+      <div class="mb-10">
+        <div class="text-7xl mb-6">🕵️</div>
+        <h1 class="text-5xl font-black title-gradient mb-3">UNDERCOVER</h1>
+        <p class="text-gray-400 text-lg">Le jeu du bluff et de la déduction</p>
+      </div>
+
+      <div class="w-full space-y-3 mb-10">
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">🏙️</span>
+          <div>
+            <p class="font-semibold text-white">Civils</p>
+            <p class="text-gray-400 text-sm">Partagent le même mot. Démasquez les imposteurs.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">🥸</span>
+          <div>
+            <p class="font-semibold text-purple-400">Undercover</p>
+            <p class="text-gray-400 text-sm">A un mot proche mais différent. Reste discret.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 bg-gray-900 rounded-xl p-4 text-left">
+          <span class="text-2xl">❓</span>
+          <div>
+            <p class="font-semibold text-pink-400">Mr. White</p>
+            <p class="text-gray-400 text-sm">N'a aucun mot. Improvise et survit.</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-new-game" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-xl transition-all duration-200 shadow-lg shadow-violet-900\/40 active:scale-95">
+        ▶ Nouvelle Partie
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 2 : CONFIGURATION                          -->
+    <!-- ================================================ -->
+    <div id="screen-setup" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+      <div class="flex items-center gap-3">
+        <button id="btn-setup-back" class="text-gray-400 hover:text-white transition-colors">
+          <span class="text-xl">←</span>
+        </button>
+        <h2 class="text-2xl font-bold">Configuration</h2>
+      </div>
+
+      <!-- Sélection du thème -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+          🎨 Thème
+        </label>
+        <select id="theme-select" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 appearance-none cursor-pointer">
+          <option value="generique">🌍 Générique</option>
+          <option value="hardcore">🔥 Hardcore</option>
+          <option value="manga">⚔️ Manga</option>
+          <option value="pays">🗺️ Pays</option>
+        </select>
+      </div>
+
+      <!-- Ajout de joueurs -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+          👥 Joueurs <span id="player-count-label" class="text-violet-400">(0/3 min)</span>
+        </label>
+        <div class="flex gap-2">
+          <input
+            id="player-name-input"
+            type="text"
+            maxlength="20"
+            placeholder="Nom du joueur…"
+            class="flex-1 bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3"
+          />
+          <button id="btn-add-player" class="px-5 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-bold transition-all active:scale-95">
+            +
+          </button>
+        </div>
+        <p id="add-player-error" class="text-red-400 text-sm mt-1 hidden"></p>
+      </div>
+
+      <!-- Liste des joueurs -->
+      <ul id="player-list" class="space-y-2 overflow-y-auto"></ul>
+
+      <!-- Configuration des rôles (visible dès 3 joueurs) -->
+      <div id="role-config" class="hidden">
+        <label class="block text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+          🎭 Répartition des rôles
+        </label>
+        <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col gap-3">
+          <!-- Civils (auto) -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🏙️</span>
+              <div>
+                <p class="font-semibold text-sm">Civils</p>
+                <p class="text-xs text-gray-500">Connaissent le vrai mot</p>
+              </div>
+            </div>
+            <span id="civil-count" class="text-2xl font-black text-blue-400">—</span>
+          </div>
+          <!-- Undercover -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🥸</span>
+              <div>
+                <p class="font-semibold text-sm text-purple-400">Undercover</p>
+                <p class="text-xs text-gray-500">Mot similaire mais différent</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="btn-uc-minus" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 font-bold text-xl flex items-center justify-center transition-all active:scale-95">−</button>
+              <span id="uc-count" class="text-2xl font-black text-purple-400 w-6 text-center">1</span>
+              <button id="btn-uc-plus"  class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 font-bold text-xl flex items-center justify-center transition-all active:scale-95">+</button>
+            </div>
+          </div>
+          <!-- Mr. White -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">❓</span>
+              <div>
+                <p class="font-semibold text-sm text-pink-400">Mr. White</p>
+                <p class="text-xs text-gray-500">Aucun mot, doit improviser</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="btn-mw-minus" class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 font-bold text-xl flex items-center justify-center transition-all active:scale-95">−</button>
+              <span id="mw-count" class="text-2xl font-black text-pink-400 w-6 text-center">0</span>
+              <button id="btn-mw-plus"  class="w-8 h-8 rounded-full bg-gray-800 border border-gray-600 font-bold text-xl flex items-center justify-center transition-all active:scale-95">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bouton Démarrer -->
+      <button id="btn-start" disabled class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-xl transition-all duration-200 shadow-lg shadow-violet-900\/40 active:scale-95">
+        🚀 Démarrer la partie
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 3 : DISTRIBUTION DES MOTS                 -->
+    <!-- ================================================ -->
+    <div id="screen-distribution" class="screen flex-col items-center justify-center min-h-screen px-6 py-8 text-center gap-8">
+
+      <div>
+        <p class="text-gray-400 text-sm uppercase tracking-widest mb-1">Distribution des rôles</p>
+        <p id="dist-progress" class="text-gray-500 text-sm"></p>
+      </div>
+
+      <div class="flex flex-col items-center gap-3">
+        <div id="dist-avatar" class="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-3xl font-black shadow-lg shadow-violet-900\/50"></div>
+        <h2 id="dist-player-name" class="text-2xl font-bold"></h2>
+        <p class="text-gray-400 text-sm">Prenez le téléphone, vérifiez que personne ne regarde.</p>
+      </div>
+
+      <div id="word-reveal-box" class="w-full bg-gray-900 rounded-2xl p-6 border border-gray-700 relative">
+        <div id="word-content" class="hidden text-center">
+          <p id="dist-role-label" class="text-xs font-semibold uppercase tracking-widest mb-2"></p>
+          <p id="dist-word" class="text-4xl font-black mb-2"></p>
+          <p id="dist-word-hint" class="text-gray-400 text-sm"></p>
+        </div>
+        <div id="word-mask" class="text-center text-gray-500">
+          <div class="text-3xl mb-2">🙈</div>
+          <p class="text-sm">Maintenez le bouton ci-dessous pour révéler</p>
+        </div>
+      </div>
+
+      <button id="btn-hold" class="w-full py-5 bg-gray-800 border-2 border-violet-500 hover:border-violet-400 rounded-2xl font-bold text-lg transition-all select-none">
+        ✋ Maintenir pour voir mon mot
+      </button>
+
+      <button id="btn-next-player" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95 opacity-0 pointer-events-none">
+        Joueur Suivant →
+      </button>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 4 : PLATEAU DE JEU                        -->
+    <!-- ================================================ -->
+    <div id="screen-board" class="screen flex-col min-h-screen px-4 py-6 gap-4">
+      <div class="px-2 flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Plateau de jeu</h2>
+          <p id="board-status" class="text-gray-400 text-sm"></p>
+        </div>
+        <div id="board-theme-badge" class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400"></div>
+      </div>
+
+      <div id="board-counters" class="flex gap-2 px-2"></div>
+
+      <div id="player-grid" class="grid grid-cols-2 gap-3 px-2"></div>
+
+      <div class="px-2 mt-auto pt-4">
+        <button id="btn-check-win" class="w-full py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl font-semibold text-sm transition-all active:scale-95">
+          🏁 Vérifier la victoire
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ÉCRAN 5 : FIN DE PARTIE                         -->
+    <!-- ================================================ -->
+    <div id="screen-end" class="screen flex-col min-h-screen px-6 py-8 gap-6">
+      <div id="end-banner" class="rounded-2xl p-6 text-center">
+        <div id="end-icon" class="text-6xl mb-3"></div>
+        <h2 id="end-title" class="text-3xl font-black mb-1"></h2>
+        <p id="end-subtitle" class="text-lg opacity-80"></p>
+      </div>
+
+      <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+        <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+          🔑 Les mots secrets
+        </h3>
+        <div id="end-words" class="space-y-1"></div>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">
+          👥 Récapitulatif
+        </h3>
+        <div id="end-player-list" class="space-y-2"></div>
+      </div>
+
+      <div class="space-y-3 mt-auto">
+        <button id="btn-replay" class="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-600 rounded-2xl font-bold text-lg transition-all active:scale-95">
+          🔄 Rejouer (mêmes joueurs)
+        </button>
+        <button id="btn-home" class="w-full py-3 bg-gray-800 hover:bg-gray-700 rounded-2xl font-semibold transition-all active:scale-95">
+          🏠 Retour à l'accueil
+        </button>
+      </div>
+    </div>
+
+  </div><!-- fin #app -->
+
+  <script>
+    /* ============================================================
+       DICTIONNAIRE DE MOTS
+    ============================================================ */
+    const wordDictionary = {
+  // Mode 1 : Générique (Des concepts simples et visuels)
+  generique: [
+    { civil: "Soleil", undercover: "Lune" }, { civil: "Miroir", undercover: "Vitre" },
+    { civil: "Chien", undercover: "Loup" }, { civil: "Stylo", undercover: "Crayon" },
+    { civil: "Voiture", undercover: "Camion" }, { civil: "Mer", undercover: "Océan" },
+    { civil: "Pomme", undercover: "Poire" }, { civil: "Glace", undercover: "Sorbet" },
+    { civil: "Chaussure", undercover: "Chaussette" }, { civil: "Canapé", undercover: "Fauteuil" },
+    // Nouveaux mots :
+    { civil: "Plage", undercover: "Piscine" }, { civil: "Livre", undercover: "Magazine" },
+    { civil: "Montagne", undercover: "Colline" }, { civil: "Maison", undercover: "Appartement" },
+    { civil: "Horloge", undercover: "Montre" }, { civil: "Vapeur", undercover: "Fumée" }
+  ],
+
+  // Mode 2 : Hardcore (Des concepts abstraits ou très proches)
+  hardcore: [
+    { civil: "Mythe", undercover: "Légende" }, { civil: "Empathie", undercover: "Sympathie" },
+    { civil: "Sourire", undercover: "Rire" }, { civil: "Doute", undercover: "Soupçon" },
+    { civil: "Rêve", undercover: "Illusion" }, { civil: "Hasard", undercover: "Destin" },
+    { civil: "Secte", undercover: "Religion" }, { civil: "Célébrité", undercover: "Influenceur" },
+    { civil: "Orgueil", undercover: "Fierté" }, { civil: "Univers", undercover: "Galaxie" },
+    // Nouveaux mots :
+    { civil: "Secret", undercover: "Mystère" }, { civil: "Coupable", undercover: "Responsable" },
+    { civil: "Erreur", undercover: "Faute" }, { civil: "Pardon", undercover: "Excuse" },
+    { civil: "Bruit", undercover: "Son" }, { civil: "Découverte", undercover: "Invention" }
+  ],
+
+  // Mode 3 : Manga / Anime (Tropes et univers connus)
+  manga: [
+    { civil: "Chakra", undercover: "Ki" }, { civil: "Sharingan", undercover: "Byakugan" },
+    { civil: "Titan", undercover: "Démon" }, { civil: "Ninja", undercover: "Samouraï" },
+    { civil: "Katana", undercover: "Épée" }, { civil: "Pirate", undercover: "Marine" },
+    { civil: "Goule", undercover: "Vampire" }, { civil: "Alchimiste", undercover: "Sorcier" },
+    { civil: "Mecha", undercover: "Cyborg" }, { civil: "Hokage", undercover: "Empereur" },
+    // Nouveaux mots :
+    { civil: "Saiyan", undercover: "Namek" }, { civil: "Shinigami", undercover: "Fantôme" },
+    { civil: "Haki", undercover: "Nen" }, { civil: "Fruit du Démon", undercover: "Magie" },
+    { civil: "Guilde", undercover: "Clan" }, { civil: "Senpai", undercover: "Sensei" }
+  ],
+
+  // Mode 4 : Pays (Géographie, pièges culturels)
+  pays: [
+    { civil: "Suède", undercover: "Norvège" }, { civil: "Japon", undercover: "Chine" },
+    { civil: "Brésil", undercover: "Argentine" }, { civil: "Canada", undercover: "États-Unis" },
+    { civil: "Australie", undercover: "Nouvelle-Zélande" }, { civil: "Italie", undercover: "Espagne" },
+    { civil: "Maroc", undercover: "Algérie" }, { civil: "Égypte", undercover: "Turquie" },
+    { civil: "Irlande", undercover: "Écosse" }, { civil: "Corée du Sud", undercover: "Corée du Nord" },
+    // Nouveaux mots :
+    { civil: "Mexique", undercover: "Espagne" }, { civil: "Suisse", undercover: "Belgique" },
+    { civil: "Inde", undercover: "Pakistan" }, { civil: "Portugal", undercover: "Brésil" },
+    { civil: "Grèce", undercover: "Chypre" }, { civil: "Vietnam", undercover: "Thaïlande" }
+  ]
+};
+
+    /* ============================================================
+       ÉTAT GLOBAL DU JEU
+    ============================================================ */
+    let gameState = {
+      players: [],
+      theme: 'generique',
+      wordPair: null,
+      distIndex: 0,
+      wordSeen: false,
+      roleConfig: { undercover: 1, mrWhite: 0 },
+    };
+
+    /* ============================================================
+       UTILITAIRES
+    ============================================================ */
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = randInt(0, i);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function initial(name) { return name.charAt(0).toUpperCase(); }
+    function roleColor(role) {
+      if (role === 'civil')      return 'text-blue-400';
+      if (role === 'undercover') return 'text-purple-400';
+      return 'text-pink-400';
+    }
+    function roleLabel(role) {
+      if (role === 'civil')      return '🏙️ Civil';
+      if (role === 'undercover') return '🥸 Undercover';
+      return '❓ Mr. White';
+    }
+
+    /* ============================================================
+       LOGIQUE DE RÉPARTITION DES RÔLES
+    ============================================================ */
+    function getRoleDistribution(n) {
+      const { undercover, mrWhite } = gameState.roleConfig;
+      return { civil: n - undercover - mrWhite, undercover, mrWhite };
+    }
+    function clampRoleConfig() {
+      const n = gameState.players.length;
+      if (n < 3) return;
+      const max = Math.floor((n - 1) / 2);
+      let { undercover: uc, mrWhite: mw } = gameState.roleConfig;
+      if (uc + mw > max) {
+        mw = Math.max(0, max - uc);
+        if (uc + mw > max) uc = Math.max(1, max - mw);
+        gameState.roleConfig = { undercover: uc, mrWhite: mw };
+      }
+    }
+    function renderRoleConfig() {
+      const n      = gameState.players.length;
+      const config = document.getElementById('role-config');
+      config.classList.toggle('hidden', n < 3);
+      if (n < 3) return;
+      const { undercover: uc, mrWhite: mw } = gameState.roleConfig;
+      const max = Math.floor((n - 1) / 2);
+      document.getElementById('civil-count').textContent = n - uc - mw;
+      document.getElementById('uc-count').textContent    = uc;
+      document.getElementById('mw-count').textContent    = mw;
+      document.getElementById('btn-uc-minus').disabled = uc <= 1;
+      document.getElementById('btn-uc-plus').disabled  = uc + mw >= max;
+      document.getElementById('btn-mw-minus').disabled = mw <= 0;
+      document.getElementById('btn-mw-plus').disabled  = uc + mw >= max;
+    }
+
+    function assignRoles() {
+      const n = gameState.players.length;
+      const dist = getRoleDistribution(n);
+      const pair = gameState.wordPair;
+      const roles = [
+        ...Array(dist.civil).fill('civil'),
+        ...Array(dist.undercover).fill('undercover'),
+        ...Array(dist.mrWhite).fill('mr_white'),
+      ];
+      const shuffled = shuffle(roles);
+      gameState.players = gameState.players.map((p, i) => ({
+        ...p,
+        role: shuffled[i],
+        word: shuffled[i] === 'civil'      ? pair.civil
+            : shuffled[i] === 'undercover' ? pair.undercover
+            : null,
+        eliminated: false,
+      }));
+    }
+
+    /* ============================================================
+       ÉCRAN CONFIGURATION
+    ============================================================ */
+    function renderPlayerList() {
+      const list  = document.getElementById('player-list');
+      const btnStart = document.getElementById('btn-start');
+      const label = document.getElementById('player-count-label');
+      const n = gameState.players.length;
+      label.textContent = `(${n}/3 min)`;
+      list.innerHTML = gameState.players.map((p, i) => `
+        <li class="flex items-center justify-between bg-gray-800 rounded-xl px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+              ${initial(p.name)}
+            </div>
+            <span class="font-medium">${p.name}</span>
+          </div>
+          <button data-index="${i}" class="btn-remove-player text-gray-500 hover:text-red-400 transition-colors">
+            ✕
+          </button>
+        </li>
+      `).join('');
+      clampRoleConfig();
+      renderRoleConfig();
+      btnStart.disabled = n < 3;
+      list.querySelectorAll('.btn-remove-player').forEach(btn => {
+        btn.addEventListener('click', () => {
+          gameState.players.splice(parseInt(btn.dataset.index), 1);
+          renderPlayerList();
+        });
+      });
+    }
+
+    function initSetupScreen() {
+      const input    = document.getElementById('player-name-input');
+      const btnAdd   = document.getElementById('btn-add-player');
+      const error    = document.getElementById('add-player-error');
+
+      function showError(msg) {
+        error.textContent = msg;
+        error.classList.remove('hidden');
+      }
+      function addPlayer() {
+        const name = input.value.trim();
+        error.classList.add('hidden');
+        if (!name)                 { showError('Entrez un prénom !');   return; }
+        if (name.length < 2)       { showError('Minimum 2 caractères.'); return; }
+        if (gameState.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+          showError('Ce joueur existe déjà !'); return;
+        }
+        gameState.players.push({ name });
+        input.value = '';
+        input.focus();
+        renderPlayerList();
+      }
+
+      btnAdd.addEventListener('click', addPlayer);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+
+      document.getElementById('btn-uc-minus').addEventListener('click', () => {
+        if (gameState.roleConfig.undercover > 1) { gameState.roleConfig.undercover--; renderRoleConfig(); }
+      });
+      document.getElementById('btn-uc-plus').addEventListener('click', () => {
+        const { undercover: uc, mrWhite: mw } = gameState.roleConfig;
+        const max = Math.floor((gameState.players.length - 1) / 2);
+        if (uc + mw < max) { gameState.roleConfig.undercover++; renderRoleConfig(); }
+      });
+      document.getElementById('btn-mw-minus').addEventListener('click', () => {
+        if (gameState.roleConfig.mrWhite > 0) { gameState.roleConfig.mrWhite--; renderRoleConfig(); }
+      });
+      document.getElementById('btn-mw-plus').addEventListener('click', () => {
+        const { undercover: uc, mrWhite: mw } = gameState.roleConfig;
+        const max = Math.floor((gameState.players.length - 1) / 2);
+        if (uc + mw < max) { gameState.roleConfig.mrWhite++; renderRoleConfig(); }
+      });
+
+      document.getElementById('btn-start').addEventListener('click', () => {
+        const theme = document.getElementById('theme-select').value;
+        gameState.wordPair = wordDictionary[theme][randInt(0, wordDictionary[theme].length - 1)];
+        gameState.theme = theme;
+        assignRoles();
+        startDistribution();
+      });
+
+      document.getElementById('btn-setup-back').addEventListener('click', () => showScreen('screen-home'));
+    }
+
+    /* ============================================================
+       ÉCRAN DISTRIBUTION
+    ============================================================ */
+    function startDistribution() {
+      gameState.distIndex = 0;
+      gameState.wordSeen  = false;
+      showScreen('screen-distribution');
+      renderDistributionTurn();
+    }
+
+    function renderDistributionTurn() {
+      const player  = gameState.players[gameState.distIndex];
+      const total   = gameState.players.length;
+      const current = gameState.distIndex + 1;
+      document.getElementById('dist-progress').textContent    = `Joueur ${current} / ${total}`;
+      document.getElementById('dist-player-name').textContent = player.name;
+      document.getElementById('dist-avatar').textContent      = initial(player.name);
+      hideWord();
+      gameState.wordSeen = false;
+      const btnNext = document.getElementById('btn-next-player');
+      btnNext.classList.add('opacity-0', 'pointer-events-none');
+      btnNext.textContent = current < total ? 'Joueur Suivant →' : 'Commencer la partie →';
+    }
+
+    function revealWord() {
+      const player = gameState.players[gameState.distIndex];
+      let roleText, wordText, hintText, colorClass;
+      if (player.role === 'civil') {
+        roleText  = '🏙️ Vous êtes Civil';
+        wordText  = player.word;
+        hintText  = 'Décrivez ce mot sans le dire !';
+        colorClass = 'text-blue-400';
+      } else if (player.role === 'undercover') {
+        roleText  = '🥸 Vous êtes Undercover';
+        wordText  = player.word;
+        hintText  = 'Votre mot est proche, mais différent. Faites semblant !';
+        colorClass = 'text-purple-400';
+      } else {
+        roleText  = '❓ Vous êtes Mr. White';
+        wordText  = '???';
+        hintText  = "Vous n'avez aucun mot. Improvise et survie !";
+        colorClass = 'text-pink-400';
+      }
+      const label = document.getElementById('dist-role-label');
+      label.className    = `text-xs font-semibold uppercase tracking-widest mb-2 ${colorClass}`;
+      label.textContent  = roleText;
+      document.getElementById('dist-word').textContent      = wordText;
+      document.getElementById('dist-word-hint').textContent = hintText;
+      document.getElementById('word-content').classList.remove('hidden');
+      document.getElementById('word-mask').classList.add('hidden');
+      gameState.wordSeen = true;
+    }
+
+    function hideWord() {
+      document.getElementById('word-content').classList.add('hidden');
+      document.getElementById('word-mask').classList.remove('hidden');
+    }
+
+    function initDistributionScreen() {
+      const btnHold = document.getElementById('btn-hold');
+      const btnNext = document.getElementById('btn-next-player');
+      const unlockNext = () => {
+        if (gameState.wordSeen) btnNext.classList.remove('opacity-0', 'pointer-events-none');
+      };
+      btnHold.addEventListener('mousedown', revealWord);
+      btnHold.addEventListener('touchstart', e => { e.preventDefault(); revealWord(); }, { passive: false });
+      btnHold.addEventListener('mouseup',   () => { hideWord(); unlockNext(); });
+      btnHold.addEventListener('mouseleave', hideWord);
+      btnHold.addEventListener('touchend',  () => { hideWord(); unlockNext(); });
+      btnNext.addEventListener('click', () => {
+        gameState.distIndex++;
+        if (gameState.distIndex >= gameState.players.length) {
+          renderBoard(); showScreen('screen-board');
+        } else {
+          renderDistributionTurn();
+        }
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN PLATEAU DE JEU
+    ============================================================ */
+    const themeLabels = {
+      generique: '🌍 Générique', hardcore: '🔥 Hardcore',
+      manga: '⚔️ Manga', pays: '🗺️ Pays'
+    };
+
+    function renderBoard() {
+      const grid     = document.getElementById('player-grid');
+      const status   = document.getElementById('board-status');
+      const counters = document.getElementById('board-counters');
+      document.getElementById('board-theme-badge').textContent = themeLabels[gameState.theme];
+      const alive    = gameState.players.filter(p => !p.eliminated);
+      status.textContent = `${alive.length} joueur${alive.length > 1 ? 's' : ''} en jeu`;
+      const civilsAlive     = alive.filter(p => p.role === 'civil').length;
+      const undercoverAlive = alive.filter(p => p.role === 'undercover').length;
+      const mrWhiteAlive    = alive.filter(p => p.role === 'mr_white').length;
+      counters.innerHTML = `
+        <div class="flex-1 bg-blue-900\/30 border border-blue-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-blue-400">${civilsAlive}</p>
+          <p class="text-xs text-blue-300">Civils</p>
+        </div>
+        <div class="flex-1 bg-purple-900\/30 border border-purple-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-purple-400">${undercoverAlive}</p>
+          <p class="text-xs text-purple-300">Undercover</p>
+        </div>
+        <div class="flex-1 bg-pink-900\/30 border border-pink-800 rounded-xl px-3 py-2 text-center">
+          <p class="text-xl font-bold text-pink-400">${mrWhiteAlive}</p>
+          <p class="text-xs text-pink-300">Mr. White</p>
+        </div>
+      `;
+      grid.innerHTML = gameState.players.map((p, i) => `
+        <div class="player-card bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col items-center gap-3 transition-all ${p.eliminated ? 'eliminated' : ''}" data-index="${i}">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-2xl font-black shadow-md">
+            ${initial(p.name)}
+          </div>
+          <p class="font-semibold text-sm text-center truncate w-full">${p.name}</p>
+          ${p.eliminated ? `
+            <div class="text-center">
+              <p class="text-xs ${roleColor(p.role)} font-semibold">${roleLabel(p.role)}</p>
+              ${p.word ? `<p class="text-xs text-gray-400">"${p.word}"</p>` : ''}
+            </div>
+            <div class="w-full py-1 bg-red-900\/30 border border-red-800 rounded-lg text-center text-xs text-red-400 font-semibold">Éliminé</div>
+          ` : `
+            <button data-index="${i}" class="btn-eliminate w-full py-2 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold transition-all active:scale-95">
+              💀 Éliminer
+            </button>
+          `}
+        </div>
+      `).join('');
+      grid.querySelectorAll('.btn-eliminate').forEach(btn => {
+        btn.addEventListener('click', () => eliminatePlayer(parseInt(btn.dataset.index)));
+      });
+    }
+
+    function eliminatePlayer(index) {
+      gameState.players[index].eliminated = true;
+      renderBoard();
+      const result = checkWinCondition();
+      if (result) setTimeout(() => showEndScreen(result), 600);
+    }
+
+    function checkWinCondition() {
+      const alive      = gameState.players.filter(p => !p.eliminated);
+      const civils     = alive.filter(p => p.role === 'civil');
+      const undercovers = alive.filter(p => p.role === 'undercover');
+      const mrWhites   = alive.filter(p => p.role === 'mr_white');
+      if (undercovers.length === 0 && mrWhites.length === 0)
+        return { winner: 'civil',      title: 'Les Civils ont gagné !',       subtitle: 'Tous les imposteurs ont été démasqués.' };
+      if (civils.length <= 1)
+        return { winner: 'undercover', title: 'Les Undercovers ont gagné !', subtitle: 'Les civils sont en minorité.' };
+      if (alive.length === 2 && mrWhites.length === 1)
+        return { winner: 'mr_white',   title: 'Mr. White a gagné !',          subtitle: "L'inconnu a survécu jusqu'au bout !" };
+      return null;
+    }
+
+    function initBoardScreen() {
+      document.getElementById('btn-check-win').addEventListener('click', () => {
+        const result = checkWinCondition();
+        if (result) {
+          showEndScreen(result);
+        } else {
+          const btn = document.getElementById('btn-check-win');
+          btn.textContent = '✓ La partie continue…';
+          setTimeout(() => { btn.textContent = '🏁 Vérifier la victoire'; }, 1500);
+        }
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN FIN DE PARTIE
+    ============================================================ */
+    function showEndScreen(result) {
+      const banner = document.getElementById('end-banner');
+      if (result.winner === 'civil') {
+        banner.className = 'rounded-2xl p-6 text-center bg-blue-900\/40 border border-blue-700';
+        document.getElementById('end-icon').textContent = '🏙️';
+      } else if (result.winner === 'undercover') {
+        banner.className = 'rounded-2xl p-6 text-center bg-purple-900\/40 border border-purple-700';
+        document.getElementById('end-icon').textContent = '🥸';
+      } else {
+        banner.className = 'rounded-2xl p-6 text-center bg-pink-900\/40 border border-pink-700';
+        document.getElementById('end-icon').textContent = '❓';
+      }
+      document.getElementById('end-title').textContent    = result.title;
+      document.getElementById('end-subtitle').textContent = result.subtitle;
+      document.getElementById('end-words').innerHTML = `
+        <div class="flex justify-between items-center py-2 border-b border-gray-800">
+          <span class="text-blue-400 font-semibold">🏙️ Mot Civil</span>
+          <span class="text-white font-bold">${gameState.wordPair.civil}</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-gray-800">
+          <span class="text-purple-400 font-semibold">🥸 Mot Undercover</span>
+          <span class="text-white font-bold">${gameState.wordPair.undercover}</span>
+        </div>
+        <div class="flex justify-between items-center py-2">
+          <span class="text-pink-400 font-semibold">❓ Mot Mr. White</span>
+          <span class="text-gray-400 italic">Aucun</span>
+        </div>
+      `;
+      document.getElementById('end-player-list').innerHTML = gameState.players.map(p => `
+        <div class="flex items-center justify-between bg-gray-900 rounded-xl px-4 py-3 ${p.eliminated ? 'opacity-50' : ''}">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-sm font-bold">
+              ${initial(p.name)}
+            </div>
+            <div>
+              <p class="font-semibold text-sm">${p.name}</p>
+              <p class="text-xs ${roleColor(p.role)}">${roleLabel(p.role)}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold">${p.word || '???'}</p>
+            ${p.eliminated ? '<p class="text-xs text-red-400">Éliminé</p>' : '<p class="text-xs text-green-400">Survivant</p>'}
+          </div>
+        </div>
+      `).join('');
+      showScreen('screen-end');
+    }
+
+    function initEndScreen() {
+      document.getElementById('btn-replay').addEventListener('click', () => {
+        const dict = wordDictionary[gameState.theme];
+        gameState.wordPair = dict[randInt(0, dict.length - 1)];
+        gameState.players  = gameState.players.map(p => ({ name: p.name }));
+        assignRoles();
+        startDistribution();
+      });
+      document.getElementById('btn-home').addEventListener('click', () => {
+        gameState.players  = [];
+        gameState.wordPair = null;
+        showScreen('screen-home');
+      });
+    }
+
+    /* ============================================================
+       ÉCRAN ACCUEIL
+    ============================================================ */
+    function initHomeScreen() {
+      document.getElementById('btn-new-game').addEventListener('click', () => {
+        gameState.players    = [];
+        gameState.wordPair   = null;
+        gameState.roleConfig = { undercover: 1, mrWhite: 0 };
+        document.getElementById('theme-select').value = 'generique';
+        renderPlayerList();
+        showScreen('screen-setup');
+      });
+    }
+
+    /* ============================================================
+       INITIALISATION
+    ============================================================ */
+    function init() {
+      initHomeScreen();
+      initSetupScreen();
+      initDistributionScreen();
+      initBoardScreen();
+      initEndScreen();
+      showScreen('screen-home');
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
